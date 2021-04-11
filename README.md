@@ -1,4 +1,4 @@
-# NHentaiAPI
+# NHentai API
 A python script that collects data from NHentai.net. 
 
 **Goals**
