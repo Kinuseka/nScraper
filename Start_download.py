@@ -103,12 +103,16 @@ def main():
   logger.info("Saving tags data")
   try:
     with open(os.path.join(os.getcwd(),"Downloads",TitleName,"metadata.json"),"w") as f:
-      f.write(json.dumps({'gallery_id' : args}))
+      f.write("[")
+      gallery_temp = json.dumps({'gallery_id' : args})
+      f.write(f"{gallery_temp},")
       f.write("\n")
-      for tags in AcquiredTags:
+      for num,tags in enumerate(AcquiredTags):
         tags = json.dumps(tags)
         f.write(tags)
-        f.write("\n")
+        if not num+1 == len(AcquiredTags):
+          f.write(",\n")
+      f.write("]")
   except:
     logger.error("An error has occured, check logs and report to dev")
     loggon.exception("")
