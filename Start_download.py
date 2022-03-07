@@ -1,92 +1,55 @@
-import Process
-import Lib
+#Standard Library
 import sys
-import threading
 import os
+import time
 import argparse
 import logging
 import datetime
-import requests
 import json
-import time
-def FileName():
-  #THIS FUNCTION DELETES OLD LOGFILES, AND ASSIGNS A NAME TO THE NEW ONE
-  if not os.path.isdir("Logs"): os.mkdir("Logs")
-  list_of_files = os.listdir(os.path.join(os.getcwd(),'Logs'))
-  full_path = ["{}".format(os.path.join(os.getcwd(),"Logs",x)) for x in list_of_files]
-  if len(list_of_files) == 10:
-    oldest_file = min(full_path, key=os.path.getctime)
-    os.remove(oldest_file)
-  date = datetime.datetime.today().replace(microsecond=0)
-  initial = (os.path.join(os.getcwd(),"Logs","[%s]LogFile") % date)
-  if not os.path.isfile("%s.log" % initial):
-    return("%s.log" % initial)
-#Create Custom Loggers
-logger = logging.getLogger(__name__)
-loggon = logging.getLogger("DEV")
-logger.setLevel(logging.DEBUG)
-loggon.setLevel(logging.DEBUG)
-# Create handlers
-File = FileName()
-c_handler = logging.StreamHandler(sys.stdout)
-o_handler = logging.FileHandler(File)
-f_handler = logging.FileHandler(File)
-c_handler.setLevel(logging.INFO)
-o_handler.setLevel(logging.INFO)
-f_handler.setLevel(logging.INFO)
-# Create format and add it to handlers
-c_format = logging.Formatter('[%(asctime)s]%(levelname)s - %(message)s')
-o_format = logging.Formatter('[%(asctime)s]DEV_%(levelname)s - %(message)s')
-f_format = logging.Formatter('[%(asctime)s]%(levelname)s - %(message)s')
-c_handler.setFormatter(c_format)
-o_handler.setFormatter(o_format)
-f_handler.setFormatter(f_format)
-# Add handlers to the logger
-logger.addHandler(c_handler)
-logger.addHandler(f_handler)
-loggon.addHandler(o_handler)
+import re
+import pickle
 
-verbose = False
-info = '''
-This program will try and scrape images on nhentai.net
-'''
-parser = argparse.ArgumentParser(description=info)
-parser.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [argument]",required=True)
-parser.add_argument('-v', '--verbose', action="store_true", help="Enable a verbose downloader")
-args = parser.parse_args()
-if args.verbose:
-  verbose = True
-args = args.nukecode
-def main():
-  global Api 
-  global AcquiredPage
-  global AcquiredTags
-  global AcquiredLinks
-  global TitleName
-  global Download_directory
+#Concurrent/multiple processing libraries
+import threading
+import anyio
+from anyio import TASK_STATUS_IGNORED
+from anyio.abc import TaskStatus
+#Http request libraries
+import urllib
+#HTTPX Asynchronous HTTP Requests 
+import httpx
+
+#Custom library
+import Process
+
+#EDIT THE MAXIMUM AMOUNT OF DOWNLOAD PROCESS HAPPENING AT THE SAME TIME
+#LOWER VALUE: SLOWER, MORE STABLE (BEST IN SLOW NETWORK CONDITIONS)
+#HIGHER VALUE: FASTER, LESS STABLE (BEST IN FAST NETWORK CONDITIONS
+
+class SortData:
+    AcquiredTags = None
+    AcquiredPage = None
+    AcquiredLinks = None
+    TitleName = None
+    Download_directory = None
+    
+
+def main(args):
+  global run_event
+  global Thread1
   logger.info("Parsing arguments")
   responseNumber, returnedData = Process.Data_parse(args) 
   if responseNumber != 0:
     logger.error("%s" % returnedData)
-    sys.exit()
+    sys.exit(1)
   logger.info("Getting Data from API")
-  try:
-    #CREATE AN INSTANCE AND LOAD THE NEEDED DATA
-    Api = Process.CommunicateApi(returnedData)
-  except Lib.Exceptions.SearchNotFound as error:
-    logger.error("Exception: SearchNotFound detected. Invalid gallery is given")
-    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-    sys.exit()
-  except requests.exceptions.ConnectionError as error:
-    logger.error("A connection error has occured")
-    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-    sys.exit()
-  except:
-    logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
-    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+  #CREATE AN INSTANCE AND LOAD THE NEEDED DATA
+  Api = Process.CommunicateApi(returnedData)
   AcquiredPage = Api.Pages()
   AcquiredTags = Api.Tags()
   TitleName = Api.Title()
+  Dir_name = Api.name
+  
   logger.info("Found: %s pages" % AcquiredPage)
   logger.info('Title name: "%s"' % TitleName)
   logger.info("Acquiring direct links")
@@ -95,96 +58,222 @@ def main():
   logger.info("Setting directory folders")
   if not os.path.isdir("Downloads"):
     os.mkdir("Downloads")
-  if not os.path.isdir(os.path.join("Downloads",TitleName)):
-    Download_directory = (os.path.join("Downloads",TitleName))
+  if not os.path.isdir(os.path.join("Downloads",Dir_name)):
+    os.mkdir(os.path.join("Downloads",Dir_name))
+  if not os.path.isdir(os.path.join("Downloads",Dir_name,TitleName)):
+    Download_directory = (os.path.join("Downloads",Dir_name,TitleName))
     os.mkdir(Download_directory)
   else:
-    Download_directory = (os.path.join(os.getcwd(),"Downloads","%s" % TitleName))
+    Download_directory = (os.path.join(os.getcwd(),"Downloads",Dir_name,"%s" % TitleName))
   logger.info("Saving tags data")
-  try:
-    with open(os.path.join(os.getcwd(),"Downloads",TitleName,"metadata.json"),"w") as f:
-      f.write("[")
-      gallery_temp = json.dumps({'gallery_id' : args})
-      f.write(f"{gallery_temp},")
-      f.write("\n")
-      for num,tags in enumerate(AcquiredTags):
-        tags = json.dumps(tags)
-        f.write(tags)
-        if not num+1 == len(AcquiredTags):
-          f.write(",\n")
-      f.write("]")
-  except:
-    logger.error("An error has occured, check logs and report to dev")
-    loggon.exception("")
-    logger.info("Downloading...")
-
-#Download zone
-finish_process = []
-def statuschecker(verbose): 
-  verbose_value = 0
-  Links = len(AcquiredLinks)
-  while True:
-    time.sleep(0.1)
-    results = Process.results
-    lenned_results = len(results)
-    average = 0
-    for key in Process.current:
-      average += Process.current.get(key,0).get("speed",0)
-    maxaverage = round(average,2)
-    average = round((average/5),2)
-    if verbose == True:
-      verbose_value += 1
-      Processes = Process.current
-      sys.stdout.write("\r Thread1: %s || Thread2: %s || Thread3: %s || Thread4: %s || Thread5: %s" % (Processes["File1"]["speed"],Processes["File2"]["speed"],Processes["File3"]["speed"],Processes["File4"]["speed"],Processes["File5"]["speed"]))
-      if verbose_value == 60:
-        verbose_value = 0
-        print("")
-        sys.stdout.write("Download in progress [%s/%s] %s%s || Current: %sKB/s || Max: %sKB/s" % (lenned_results,Links,round(100 * lenned_results / Links,2),"%",average,maxaverage))
-        print("")
-    else:
-      maxlabel = "MB/s" if (maxaverage >= 1000) else "KB/s"
-      maxaverage = round((maxaverage/1000),2) if (maxaverage >= 1000) else maxaverage
-      avelabel = "MB/s" if (average >= 1000) else "KB/s"
-      average = (round((average/1000),2)) if (average >= 1000) else average 
-      avename = ("%s%s" % (average,avelabel))
-      maxname = ("%s%s" % (maxaverage,maxlabel))
-      sys.stdout.write("\r[Download in progress [%s/%s] %s%s || Current: %s || Max: %s]" % (lenned_results,Links,round(100 * lenned_results / Links,2),"%",avename,maxname))
-    sys.stdout.flush()
-    if lenned_results >= Links:
-      print("")
-      logger.info("Download has been completed")
-      finish_process.append("Done")
+  with open(os.path.join(os.getcwd(),"Downloads",Dir_name,TitleName,"metadata.json"),"w") as f:
+    t_dict = []
+    gallery_temp = {'gallery_id' : args}
+    t_dict.append(gallery_temp)
+    for num,tags in enumerate(AcquiredTags):
+      t_dict.append(tags)
+    f.write(json.dumps(t_dict))
     
-def download():
-  Thread1 = threading.Thread(target=statuschecker,args=(verbose,))
-  Thread1.daemon = True
+  #Sort Data on a class   
+  SortData.AcquiredTags = AcquiredTags
+  SortData.AcquiredLinks = AcquiredLinks
+  SortData.AcquiredPage = AcquiredPage
+  
+  SortData.TitleName = TitleName
+  SortData.Download_directory = Download_directory
+    
+  logger.info("Downloading...")
+  #RUN STATUS EVENT
+  run_event = threading.Event()
+  run_event.set()
+  Thread1 = threading.Thread(target=statuschecker,args=(verbose,run_event,))
   Thread1.start()
+  anyio.run(amain, backend='trio')
+  #--+
+def statuschecker(verbose,run_event): 
+  "User Interface status viewer"
   loggon.info("Status thread opened")
+  Links = len(SortData.AcquiredLinks)
+  Data_pickledirectory = os.path.join(SortData.Download_directory, ".datadl")
+  if os.path.isfile(Data_pickledirectory):
+    with open(Data_pickledirectory, "rb") as f: 
+        try:
+          Process.Data = pickle.load(f)
+        except (EOFError,pickle.UnpicklingError):
+            pass
+  while run_event.is_set():
+    time.sleep(0.1)
+    #----
+    lenned_results = len(Process.VolatileData.response_proc)
+    total_bytes = round(Process.VolatileData.total() / 1000000,2)
+    progress_bytes = round(Process.VolatileData.progress() / 1000000,2)
+    #----
+    sys.stdout.write(f"\rDownload in progress [{lenned_results}/{Links}][{progress_bytes}/{total_bytes}]")
+    sys.stdout.flush()
+    if lenned_results == Links:
+      retry_attempts = len(Process.VolatileData.retry_proc)
+      #del Process.Data.retry_proc[:]
+      #del Process.Data.response_proc[:]
+      #Process.Data.total = 0
+      #Process.Data.progress = 0
+      ready = False
+      result = request_status.count(True) == len(request_status)
+      if result:
+        print("")
+        logger.info("Download completed successfully")
+        ready = True
+      else:
+        print("")
+        logger.info("\nDownload failed, some pages did not load correctly")
+        ready = True
+      if retry_attempts != 0 and ready:
+        percentage = round((retry_attempts/(Links*6))*100,2)
+        logger.info(f"Retry rate: {retry_attempts}({percentage}%)")
+        if retry_attempts >= round((Links*5)*0.05,2):
+          logger.warning(f"Retry rates exceed 5% of the acceptable threshold, if you are on a slow network condition, please reduce 'semaphore' variable on 'config.json' to reduce network congestion")
+      break
+  else:
+    print("")
+  with open(Data_pickledirectory, "wb") as f:
+    data = Process.Data
+    pickle.dump(data, f, protocol=4)
+        
+    
+    
+    
+async def amain():
+  DLInst = Process
+  #Regulates max concurrency to be opened
+  sem = anyio.Semaphore(max_process_open)
   #Start loop
-  assigned = 0
-  while True:
-    for num, link in enumerate(AcquiredLinks):
-      loggon.info("Downloading Page %s out of %s" % (num+1, len(AcquiredLinks)))
-      #Regulates maximum threads to be opened 
-      while True:
-        assigned += 1
-        if assigned == 6:
-          assigned = 1
-        if Process.current[f"File%s" % assigned]["status"] == True:
-          continue
-        break
-      ##while threading.active_count() == 8: pass
-    #Slows down thread creation to prevent memory overlap
-      
-      Thread2 = threading.Thread(target=Api.Download, args=(link,num+1,Download_directory, assigned))
-      Thread2.daemon = True
-      Thread2.start()
-      loggon.info("Thread: %s has opened successfully" % assigned)
+  async def _collect_status(*args,task_status: TaskStatus = TASK_STATUS_IGNORED):
+    status = await DLInst.Queue(*args,task_status)
+    request_status.append(status)
+  
+  async with httpx.AsyncClient() as client, anyio.create_task_group() as tg:
+    for num, link in enumerate(SortData.AcquiredLinks):
+      loggon.info("Downloading Page %s out of %s" % (num+1, len(SortData.AcquiredLinks)))
+      await tg.start(_collect_status, link, num+1, SortData.Download_directory, client, loggon, sem)
+      loggon.info("Async: %s has opened successfully" % (num+1))
     else:
-      loggon.info("All possible threads has opened successfully")
-      loggon.info("Waiting for downloader")
-    while not "Done" in finish_process: continue
+      loggon.info("All possible pages has opened successfully")
+    loggon.info("Waiting to finish download")
+  Thread1.join()
+      
+if __name__ == "__main__":
+  #Status Index
+  if sys.version_info[0:2] < (3,6):
+    print("UNSUPPORTED VERSION! PLEASE INSTALL PYTHON 3.6 OR HIGHER")
     sys.exit()
-
-main()
-download()
+  #INITIALIZE FUNCTIONS
+  def is_path(string):
+    if os.path.isdir(string):
+      return string 
+    elif os.path.isfile(string):
+      return string
+    else:
+      raise NotADirectoryError(string)
+  def sconfig(_type):
+    with open("config.json","r") as f:
+      config = json.load(f)
+    if _type == 1:
+      return config["main"]["semaphore"]
+  def FileName():
+    #THIS FUNCTION DELETES OLD LOGFILES, AND ASSIGNS A NAME TO THE NEW ONE
+    if not os.path.isdir("Logs"): os.mkdir("Logs")
+    list_of_files = os.listdir(os.path.join(os.getcwd(),'Logs'))
+    full_path = ["{}".format(os.path.join(os.getcwd(),"Logs",x)) for x in list_of_files]
+    if len(list_of_files) == 10:
+      oldest_file = min(full_path, key=os.path.getctime)
+      os.remove(oldest_file)
+    date = datetime.datetime.today().replace(microsecond=0)
+    initial = (os.path.join(os.getcwd(),"Logs","[%s]LogFile") % date)
+    if not os.path.isfile("%s.log" % initial):
+      return("%s.log" % initial)
+  #Create Custom Loggers
+  logger = logging.getLogger(__name__)
+  loggon = logging.getLogger("DEV")
+  logger.setLevel(logging.DEBUG)
+  loggon.setLevel(logging.DEBUG)
+  # Create handlers
+  File = FileName()
+  c_handler = logging.StreamHandler(sys.stdout)
+  o_handler = logging.FileHandler(File)
+  f_handler = logging.FileHandler(File)
+  c_handler.setLevel(logging.INFO)
+  o_handler.setLevel(logging.INFO)
+  f_handler.setLevel(logging.INFO)
+  # Create format and add it to handlers
+  c_format = logging.Formatter('[%(asctime)s]%(levelname)s - %(message)s')
+  o_format = logging.Formatter('[%(asctime)s]DEV_%(levelname)s - %(message)s')
+  f_format = logging.Formatter('[%(asctime)s]%(levelname)s - %(message)s')
+  c_handler.setFormatter(c_format)
+  o_handler.setFormatter(o_format)
+  f_handler.setFormatter(f_format)
+  # Add handlers to the logger
+  logger.addHandler(c_handler)
+  logger.addHandler(f_handler)
+  loggon.addHandler(o_handler)
+  #-------
+  
+  max_process_open = sconfig(1)
+  EMERGENCY = 255
+  verbose = False
+  info = '''
+  This program will try and scrape images on nhentai.net
+  '''
+  parser = argparse.ArgumentParser(description=info)
+  group = parser.add_mutually_exclusive_group(required=True)
+  group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [argument]")
+  group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location]")
+  parser.add_argument('-v', '--verbose', action="store_true", help="Enable a verbose downloader")
+  args = parser.parse_args()
+  if args.verbose:
+    verbose = True
+  request_status = []
+  #CALL FUNCTIONS---
+      
+  
+  #Catch error and main function calls
+  try: 
+    if args.filecode:
+      if Process.CommunicateApi.File_iter.available:
+        
+        logger.warning("This method is still UNDER TESTING and MIGHT NOT WORK PROPERLY")
+        time.sleep(3)
+        with Process.CommunicateApi.File_iter(args.filecode) as iof:
+          for file_link in iof:
+            logger.info("Downloading link: %s" % file_link)
+            main(file_link)
+            print("-"*10)
+      else:
+        logger.error("This method is not available for the current module")
+    else:
+      main(args.nukecode)
+  except urllib.error.HTTPError as e:
+    #ONLY OCCURS WHEN THERE IS NO RESULTS
+    if e.code == 404:
+      logger.error("The content you are looking for is not found")
+    else:
+      logger.error("HTTP Error Code: %s" % e.code)
+      
+    sys.exit(1)
+  except urllib.error.URLError as error:
+    logger.error("A connection error has occured")
+    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+    sys.exit(1)
+  except SystemExit as error:
+    if error.code == EMERGENCY:
+      os._exit(1)
+    else:
+      raise
+  except KeyboardInterrupt:
+      print("")
+      logger.info("Attempting to close thread..")
+      run_event.clear()
+      Thread1.join()
+      logger.info("Thread closed successfully")
+  except:
+    logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
+    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+    sys.exit()
