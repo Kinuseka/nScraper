@@ -5,13 +5,19 @@ A python script that collects data from NHentai.net.
 ```
 >Collect data from NHentai
 >Automatically save the metadata(tags)
->Download 5 pages simultaneously
->The code has to be easily modifiable for easy support to other sites 
->Collect gallery codes from a text file and automatially download
+>Download pages concurrently
+>API Template (For possible other websites to support)
 ```
 
 **Libraries used**
 ```
->bs4
->requests
+>bs4 
+>Httpx
+>Anyio (Trio Backend)
+>Trio
+```
+
+**Supported Sites at the moment**
+```
+• NHentai
 ```
