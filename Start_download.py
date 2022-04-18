@@ -188,7 +188,6 @@ if __name__ == "__main__":
       os.remove(oldest_file)
     date = str(datetime.datetime.today().replace(microsecond=0)).replace(":",".")
     initial = (os.path.join(os.getcwd(),"Logs","[%s]LogFile") % date)
-    print(initial)
     if not os.path.isfile("%s.log" % initial):
       return("%s.log" % initial)
   #Create Custom Loggers
