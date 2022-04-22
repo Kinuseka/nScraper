@@ -163,13 +163,13 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
     
     try:
       if Data.progress_status[title_value]["bool"]:
-        download_path = Data.progress_status[title_value]["directory"]
+        download_path =  os.path.normpath(Data.progress_status[title_value]["directory"])
         if __complete_resume():
             return True
         else:
             __reset_progress()
       elif Data.progress_status[title_value]["Max"]:
-        download_path = Data.progress_status[title_value]["directory"]
+        download_path =  os.path.normpath(Data.progress_status[title_value]["directory"])
         Data_tsnap = Data.progress_status[title_value]["Max"] 
         Data_psnap = Data.progress_status["Bytes"]
         if __incomplete_resume():
