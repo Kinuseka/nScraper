@@ -48,17 +48,17 @@ def validatename(func):
   """
   @wraps(func)
   def wrapper(self):
-    word = func(self)
+    word_orig = func(self)
+    word = word_orig
     forbidden = ['<', '>', ':', '"', "|", "?", "*"]
-    if os.name == "nt":
-      for char in forbidden:
-        word = word.replace(char, "")
+    for char in forbidden:
+      word = word.replace(char, "")
         
     word = word.replace("\\","_")
     word = word.replace("/","_")
     
     
-    return word
+    return (word,word_orig)
   return wrapper
 
 def sorttags(func):

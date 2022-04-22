@@ -49,7 +49,8 @@ def main(args):
   Api = Process.CommunicateApi(returnedData)
   AcquiredPage = Api.Pages()
   AcquiredTags = Api.Tags()
-  TitleName = Api.Title()
+  TitleName = Api.Title()[0]
+  RawTitleName = Api.Title()[1]
   Dir_name = Api.name
   
   logger.info("Found: %s pages" % AcquiredPage)
@@ -69,11 +70,17 @@ def main(args):
     Download_directory = (os.path.join(os.getcwd(),"Downloads",Dir_name,"%s" % TitleName))
   logger.info("Saving tags data")
   with open(os.path.join(os.getcwd(),"Downloads",Dir_name,TitleName,"metadata.json"),"w") as f:
-    t_dict = []
-    gallery_temp = {'gallery_id' : args}
-    t_dict.append(gallery_temp)
+    t_dict = {}
+    t_list = []
     for num,tags in enumerate(AcquiredTags):
-      t_dict.append(tags)
+      t_list.append(tags)
+    origfilename_temp = {"title_original" : RawTitleName}
+    gallery_temp = {'gallery_id' : args}
+    tags_temp = {"tags" : t_list}
+    t_dict.update(origfilename_temp)
+    t_dict.update(gallery_temp)
+    t_dict.update(tags_temp)
+    
     f.write(json.dumps(t_dict))
     
   #Sort Data on a class   
@@ -193,8 +200,6 @@ if __name__ == "__main__":
     if not os.path.isfile("%s.log" % initial):
       return("%s.log" % initial)
   def getSystemInfo(logtype):
-    if os.name == "nt":
-      logger.warning("Windows system detected, filenames will be modified to comply with windows forbidden characters")
     try:
         inf_platform = "System: " + str(platform.system())
         inf_release = "Platform: " + str(platform.release())
