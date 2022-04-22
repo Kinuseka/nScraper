@@ -32,12 +32,32 @@ def validatename(func):
   "\\" similar usage but for windows.
   (Note I used double backslash in source code to escape the backslash character. Read about it: https://www.w3schools.com/python/gloss_python_escape_characters.asp)
   if both of these are present, the program might confuse it for a different directory rather than treating it as a file name.
+  
+  Use this wrapper to modify forbidden filenames from windows system
+   The following reserved characters:
+
+        < (less than)
+        > (greater than)
+        : (colon)
+        " (double quote)
+        / (forward slash)
+        \ (backslash)
+        | (vertical bar or pipe)
+        ? (question mark)
+        * (asterisk)
   """
   @wraps(func)
   def wrapper(self):
     word = func(self)
+    forbidden = ['<', '>', ':', '"', "|", "?", "*"]
+    if os.name == "nt":
+      for char in forbidden:
+        word = word.replace(char, "")
+        
     word = word.replace("\\","_")
     word = word.replace("/","_")
+    
+    
     return word
   return wrapper
 

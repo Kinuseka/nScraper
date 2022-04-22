@@ -1,4 +1,5 @@
 #Standard Library
+from cmath import inf
 import sys
 import os
 import time
@@ -8,6 +9,7 @@ import datetime
 import json
 import re
 import pickle
+import platform 
 
 #Concurrent/multiple processing libraries
 import threading
@@ -190,6 +192,26 @@ if __name__ == "__main__":
     initial = (os.path.join(os.getcwd(),"Logs","[%s]LogFile") % date)
     if not os.path.isfile("%s.log" % initial):
       return("%s.log" % initial)
+  def getSystemInfo(logtype):
+    if os.name == "nt":
+      logger.warning("Windows system detected, filenames will be modified to comply with windows forbidden characters")
+    try:
+        inf_platform = "System: " + str(platform.system())
+        inf_release = "Platform: " + str(platform.release())
+        inf_version = "Version: " + str(platform.version())
+        inf_machine = "Machine: " + str(platform.machine())
+        logtype.info(
+        (
+        inf_platform,
+        inf_release,
+        inf_version,
+        inf_machine
+        )
+        )
+        return 0
+    except Exception as e:
+        logging.exception(e)
+        return 1
   #Create Custom Loggers
   logger = logging.getLogger(__name__)
   loggon = logging.getLogger("DEV")
@@ -236,6 +258,9 @@ if __name__ == "__main__":
   
   #Catch error and main function calls
   try: 
+    loggon.info(f"=============== System INFO ===============")
+    getSystemInfo(loggon)
+    loggon.info(f"===========================================")
     if args.filecode:
       if Process.CommunicateApi.File_iter.available:
         
