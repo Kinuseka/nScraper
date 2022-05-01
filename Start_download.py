@@ -1,4 +1,5 @@
 #Standard Library
+from cmath import inf
 import sys
 import os
 import time
@@ -296,39 +297,3 @@ if __name__ == "__main__":
           return 101
         
       sys.exit(1)
-    except urllib.error.URLError as error:
-      logger.error("A connection error has occured")
-      loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-      sys.exit(1)
-    except SystemExit as error:
-      if error.code == EMERGENCY:
-        os._exit(1)
-      else:
-        raise
-    except KeyboardInterrupt:
-        print("")
-        logger.info("Attempting to close thread..")
-        run_event.clear()
-        Thread1.join()
-        logger.info("Thread closed successfully")
-    except ModuleNotFoundError as error:
-      mod_dir =  f'Lib.{API_DATA_CONFIG["module_name"]}'
-      if error.name == mod_dir:
-        if API_MIRROR_ACCOMPLISHED:
-          logger.error("Mirror server is not available, traceback is saved on the recent log file")
-          loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-        else:
-          logger.error(f"Importing error, {error.name} is not a valid module, traceback is saved on the recent log file")
-          loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-    except:
-      logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
-      loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-      sys.exit()
-  while True:
-    exit_code = callers()
-    if exit_code == 101:
-        logger.info("Mirror server enabled, trying mirror server.")
-        API_DATA_CONFIG["module_name"] = f'{API_DATA_CONFIG["module_name"]}_mirror'
-        API_MIRROR_ACCOMPLISHED = True
-    else:
-      break
