@@ -330,4 +330,6 @@ if __name__ == "__main__":
       logger.info("Mirror server enabled, trying mirror server.")
       API_DATA_CONFIG["module_name"] = f'{API_DATA_CONFIG["module_name"]}_mirror'
       API_MIRROR_ACCOMPLISHED = True
+    else:
+      break
     
