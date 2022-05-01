@@ -8,8 +8,8 @@ import os
 import sys
 
 # Configurations
-USERNAME = "updater_client_python_1.0"
-REPO = "https://github.com/Kinuseka/NHentaiAPI.git"
+USERNAME = "Kinuseka"
+REPO = "NHentaiAPI"
 BRANCH = "master"
 LOCAL_DIR = os.getcwd()
 
