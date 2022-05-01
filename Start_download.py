@@ -1,4 +1,5 @@
 #Standard Library
+from cmath import inf
 import sys
 import os
 import time
@@ -8,6 +9,7 @@ import datetime
 import json
 import re
 import pickle
+import platform 
 
 #Concurrent/multiple processing libraries
 import threading
@@ -44,10 +46,12 @@ def main(args):
     sys.exit(1)
   logger.info("Getting Data from API")
   #CREATE AN INSTANCE AND LOAD THE NEEDED DATA
+  
   Api = Process.CommunicateApi(returnedData)
   AcquiredPage = Api.Pages()
   AcquiredTags = Api.Tags()
-  TitleName = Api.Title()
+  TitleName = Api.Title()[0]
+  RawTitleName = Api.Title()[1]
   Dir_name = Api.name
   
   logger.info("Found: %s pages" % AcquiredPage)
@@ -67,11 +71,17 @@ def main(args):
     Download_directory = (os.path.join(os.getcwd(),"Downloads",Dir_name,"%s" % TitleName))
   logger.info("Saving tags data")
   with open(os.path.join(os.getcwd(),"Downloads",Dir_name,TitleName,"metadata.json"),"w") as f:
-    t_dict = []
-    gallery_temp = {'gallery_id' : args}
-    t_dict.append(gallery_temp)
+    t_dict = {}
+    t_list = []
     for num,tags in enumerate(AcquiredTags):
-      t_dict.append(tags)
+      t_list.append(tags)
+    origfilename_temp = {"title_original" : RawTitleName}
+    gallery_temp = {'gallery_id' : args}
+    tags_temp = {"tags" : t_list}
+    t_dict.update(origfilename_temp)
+    t_dict.update(gallery_temp)
+    t_dict.update(tags_temp)
+    
     f.write(json.dumps(t_dict))
     
   #Sort Data on a class   
@@ -178,6 +188,8 @@ if __name__ == "__main__":
       config = json.load(f)
     if _type == 1:
       return config["main"]["semaphore"]
+    elif _type == 2:
+      return config["main"]["Api"]
   def FileName():
     #THIS FUNCTION DELETES OLD LOGFILES, AND ASSIGNS A NAME TO THE NEW ONE
     if not os.path.isdir("Logs"): os.mkdir("Logs")
@@ -186,10 +198,28 @@ if __name__ == "__main__":
     if len(list_of_files) == 10:
       oldest_file = min(full_path, key=os.path.getctime)
       os.remove(oldest_file)
-    date = datetime.datetime.today().replace(microsecond=0)
+    date = str(datetime.datetime.today().replace(microsecond=0)).replace(":",".")
     initial = (os.path.join(os.getcwd(),"Logs","[%s]LogFile") % date)
     if not os.path.isfile("%s.log" % initial):
       return("%s.log" % initial)
+  def getSystemInfo(logtype):
+    try:
+        inf_platform = "System: " + str(platform.system())
+        inf_release = "Platform: " + str(platform.release())
+        inf_version = "Version: " + str(platform.version())
+        inf_machine = "Machine: " + str(platform.machine())
+        logtype.info(
+        (
+        inf_platform,
+        inf_release,
+        inf_version,
+        inf_machine
+        )
+        )
+        return 0
+    except Exception as e:
+        logging.exception(e)
+        return 1
   #Create Custom Loggers
   logger = logging.getLogger(__name__)
   loggon = logging.getLogger("DEV")
@@ -217,6 +247,8 @@ if __name__ == "__main__":
   #-------
   
   max_process_open = sconfig(1)
+  API_DATA_CONFIG = sconfig(2)
+  API_MIRROR_ACCOMPLISHED = False
   EMERGENCY = 255
   verbose = False
   info = '''
@@ -235,45 +267,69 @@ if __name__ == "__main__":
       
   
   #Catch error and main function calls
-  try: 
-    if args.filecode:
-      if Process.CommunicateApi.File_iter.available:
-        
-        logger.warning("This method is still UNDER TESTING and MIGHT NOT WORK PROPERLY")
-        time.sleep(3)
-        with Process.CommunicateApi.File_iter(args.filecode) as iof:
-          for file_link in iof:
-            logger.info("Downloading link: %s" % file_link)
-            main(file_link)
-            print("-"*10)
+  def callers():
+    try:
+      Process.initialize(API_DATA_CONFIG) 
+      loggon.info(f"=============== System INFO ===============")
+      getSystemInfo(loggon)
+      loggon.info(f"===========================================")
+      if args.filecode:
+        if Process.CommunicateApi.File_iter.available:
+          
+          logger.warning("This method is still UNDER TESTING and MIGHT NOT WORK PROPERLY")
+          time.sleep(3)
+          with Process.CommunicateApi.File_iter(args.filecode) as iof:
+            for file_link in iof:
+              logger.info("Downloading link: %s" % file_link)
+              main(file_link)
+              print("-"*10)
+        else:
+          logger.error("This method is not available for the current module")
       else:
-        logger.error("This method is not available for the current module")
+        main(args.nukecode)
+    except urllib.error.HTTPError as e:
+      #ONLY OCCURS WHEN THERE IS NO RESULTS
+      if e.code == 404:
+        logger.error("The content you are looking for is not found")
+      else:
+        logger.error("HTTP Error Code: %s" % e.code)
+        if API_DATA_CONFIG["mirror_available"] and not API_MIRROR_ACCOMPLISHED:
+          return 101
+        
+      sys.exit(1)
+    except urllib.error.URLError as error:
+      logger.error("A connection error has occured")
+      loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+      sys.exit(1)
+    except SystemExit as error:
+      if error.code == EMERGENCY:
+        os._exit(1)
+      else:
+        raise
+    except KeyboardInterrupt:
+        print("")
+        logger.info("Attempting to close thread..")
+        run_event.clear()
+        Thread1.join()
+        logger.info("Thread closed successfully")
+    except ModuleNotFoundError as error:
+      mod_dir =  f'Lib.{API_DATA_CONFIG["module_name"]}'
+      if error.name == mod_dir:
+        if API_MIRROR_ACCOMPLISHED:
+          logger.error("Mirror server is not available, traceback is saved on the recent log file")
+          loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+        else:
+          logger.error(f"Importing error, {error.name} is not a valid module, traceback is saved on the recent log file")
+          loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+    except:
+      logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
+      loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+      sys.exit()
+  while True:
+    exit_code = callers()
+    if exit_code == 101:
+        logger.info("Mirror server enabled, trying mirror server.")
+        API_DATA_CONFIG["module_name"] = f'{API_DATA_CONFIG["module_name"]}_mirror'
+        API_MIRROR_ACCOMPLISHED = True
     else:
-      main(args.nukecode)
-  except urllib.error.HTTPError as e:
-    #ONLY OCCURS WHEN THERE IS NO RESULTS
-    if e.code == 404:
-      logger.error("The content you are looking for is not found")
-    else:
-      logger.error("HTTP Error Code: %s" % e.code)
-      
-    sys.exit(1)
-  except urllib.error.URLError as error:
-    logger.error("A connection error has occured")
-    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-    sys.exit(1)
-  except SystemExit as error:
-    if error.code == EMERGENCY:
-      os._exit(1)
-    else:
-      raise
-  except KeyboardInterrupt:
-      print("")
-      logger.info("Attempting to close thread..")
-      run_event.clear()
-      Thread1.join()
-      logger.info("Thread closed successfully")
-  except:
-    logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
-    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-    sys.exit()
+      break

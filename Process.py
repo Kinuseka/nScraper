@@ -8,6 +8,9 @@ import time
 import re
 
 
+def initialize(API_DATA_CONFIG):
+  Lib.init_import(API_DATA_CONFIG["module_name"])
+
 def Data_parse(data):
   """For MODDERS:
   1.If you want to add a Link verifier to prevent invalid link error then you have nothing to edit here, however you can modify it to return true all the time if you dont want this feature
@@ -32,13 +35,33 @@ def validatename(func):
   "\\" similar usage but for windows.
   (Note I used double backslash in source code to escape the backslash character. Read about it: https://www.w3schools.com/python/gloss_python_escape_characters.asp)
   if both of these are present, the program might confuse it for a different directory rather than treating it as a file name.
+  
+  Use this wrapper to modify forbidden filenames from windows system
+   The following reserved characters:
+
+        < (less than)
+        > (greater than)
+        : (colon)
+        " (double quote)
+        / (forward slash)
+        \ (backslash)
+        | (vertical bar or pipe)
+        ? (question mark)
+        * (asterisk)
   """
   @wraps(func)
   def wrapper(self):
-    word = func(self)
+    word_orig = func(self)
+    word = word_orig
+    forbidden = ['<', '>', ':', '"', "|", "?", "*"]
+    for char in forbidden:
+      word = word.replace(char, "")
+        
     word = word.replace("\\","_")
     word = word.replace("/","_")
-    return word
+    
+    
+    return (word,word_orig)
   return wrapper
 
 def sorttags(func):
@@ -58,6 +81,7 @@ class CommunicateApi:
   Usually does not require modifying this unless if you want to add missing features
   """
   def __init__(self, data):
+      
       self._Handler = Lib.Api(data)
       self.name = self._Handler.name
   def Pages(self):
@@ -143,13 +167,13 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
     
     try:
       if Data.progress_status[title_value]["bool"]:
-        download_path = Data.progress_status[title_value]["directory"]
+        download_path =  os.path.normpath(Data.progress_status[title_value]["directory"])
         if __complete_resume():
             return True
         else:
             __reset_progress()
       elif Data.progress_status[title_value]["Max"]:
-        download_path = Data.progress_status[title_value]["directory"]
+        download_path =  os.path.normpath(Data.progress_status[title_value]["directory"])
         Data_tsnap = Data.progress_status[title_value]["Max"] 
         Data_psnap = Data.progress_status["Bytes"]
         if __incomplete_resume():

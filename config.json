@@ -1,5 +1,9 @@
 {
   "main":{
-    "semaphore":10
+    "semaphore":10,
+    "Api": {
+      "module_name": "NHentai",
+      "mirror_available": true 
+    }
   }
 }

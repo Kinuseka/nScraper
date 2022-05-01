@@ -4,7 +4,7 @@ import json
 import urllib.request
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
-
+site_domain = "net"
 headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"}
 #Optional
 def CheckLink(data, digit=False):
@@ -13,8 +13,8 @@ def CheckLink(data, digit=False):
   Most of the time there wont be any major edits other than the website you want to check.
   '''
   if digit:
-    return("https://nhentai.net/g/%s" % data)
-  if re.search("https?://nhentai.net/g/(\d+|/)", data.lower()):
+    return(f"https://nhentai.{site_domain}/g/%s" % data)
+  if re.search(f"https?://nhentai.{site_domain}/g/(\d+|/)", data.lower()):
     return(0, data)
   else:
     return(2, "Link is not nHentai")

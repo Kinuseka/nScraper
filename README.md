@@ -15,9 +15,14 @@ A python script that collects data from NHentai.net.
 >Httpx
 >Anyio (Trio Backend)
 >Trio
+>pyyaml
 ```
 
 **Supported Sites at the moment**
 ```
-• NHentai
+• NHentai [Mirror sites: .to])
 ```
+
+**Note:**
+Mirror download is enabled by default incase the official site is not available, if you prefer
+to disable this. Please set "mirror_available" to `false` in config.json
