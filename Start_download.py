@@ -23,6 +23,7 @@ import httpx
 
 #Custom library
 import Process
+from essentials import updater as Updater
 
 #EDIT THE MAXIMUM AMOUNT OF DOWNLOAD PROCESS HAPPENING AT THE SAME TIME
 #LOWER VALUE: SLOWER, MORE STABLE (BEST IN SLOW NETWORK CONDITIONS)
@@ -258,10 +259,17 @@ if __name__ == "__main__":
   group = parser.add_mutually_exclusive_group(required=True)
   group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [argument]")
   group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location]")
+  group.add_argument('-up', '--update', action="store_true", help="Checks for update and applies it")
   parser.add_argument('-v', '--verbose', action="store_true", help="Enable a verbose downloader")
   args = parser.parse_args()
   if args.verbose:
     verbose = True
+  elif args.update:
+    print("Initiating update are you sure? (Y/n)")
+    __choice_user = input().lower().strip()
+    if __choice_user == "y":  
+      Updater.github_sync()
+    sys.exit()
   request_status = []
   #CALL FUNCTIONS---
       
