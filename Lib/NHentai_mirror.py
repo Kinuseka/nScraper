@@ -37,10 +37,7 @@ class Api:
     script_p1 = (self.soup.find_all("script"))
     for num, script_line in enumerate(script_p1):
       try:
-        # script_p2 = script_line.contents[0].strip().replace("window._gallery = JSON.parse(", "").replace(");","")
         script_line = script_line.contents[0].strip()
-        # script_p2 = re.search(r'N.gallery\(\.(.*?)gallery.init\(', script_line)
-        # script_p2 = re.search(r'N.gallery\((.*?)gallery.init\(', script_line, re.DOTALL).group().replace("N.gallery(","").replace(");","").replace("gallery.init(","")
         script_p2 = re.search(r'N.gallery\((.*?)gallery.init\(', script_line, re.DOTALL)
         if script_p2:
           break
@@ -103,8 +100,11 @@ class Api:
   def __preloader_pages(self):
     dict_data = self.json["images"]["pages"]
     data = []
-    for v in range(self.Pages()):
-      data.append(dict_data[f"{v+2}"])
+    try:
+      for v in range(self.Pages()):
+        data.append(dict_data[f"{v+2}"])
+    except TypeError as e:
+      data = dict_data
     self.preloaded_data = data
    
 class Iterdata:
