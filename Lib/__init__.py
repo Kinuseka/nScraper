@@ -1,15 +1,25 @@
 import importlib
+Api = None
+Iterdata = None
+CheckLink = None
 
-_module_name = "NHentai"
+def init_import(import_name):
+    global Api
+    global Iterdata
+    global CheckLink
 
-_classes = ("Api","Iterdata","CheckLink")
-_package_name = "Lib"
-_full_module = "%s.%s" % (_package_name,_module_name)
+    #Default to NHentai
+    
+    _module_name = import_name
+  
+    _package_name = "Lib"   
+    _full_module = "%s.%s" % (_package_name,_module_name)
+    _classes = ("Api","Iterdata","CheckLink")
 
 
-Api = getattr(importlib.import_module(_full_module),_classes[0])
-Iterdata = getattr(importlib.import_module(_full_module),_classes[1])
-CheckLink = getattr(importlib.import_module(_full_module),_classes[2])
+    Iterdata = getattr(importlib.import_module(_full_module),_classes[1])
+    Api = getattr(importlib.import_module(_full_module),_classes[0])
+    CheckLink = getattr(importlib.import_module(_full_module),_classes[2])
 
 
 #FOR MODDERS:

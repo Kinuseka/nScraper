@@ -8,6 +8,9 @@ import time
 import re
 
 
+def initialize(API_DATA_CONFIG):
+  Lib.init_import(API_DATA_CONFIG["module_name"])
+
 def Data_parse(data):
   """For MODDERS:
   1.If you want to add a Link verifier to prevent invalid link error then you have nothing to edit here, however you can modify it to return true all the time if you dont want this feature
@@ -78,6 +81,7 @@ class CommunicateApi:
   Usually does not require modifying this unless if you want to add missing features
   """
   def __init__(self, data):
+      
       self._Handler = Lib.Api(data)
       self.name = self._Handler.name
   def Pages(self):

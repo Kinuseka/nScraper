@@ -23,6 +23,7 @@ import httpx
 
 #Custom library
 import Process
+from essentials import updater as Updater
 
 #EDIT THE MAXIMUM AMOUNT OF DOWNLOAD PROCESS HAPPENING AT THE SAME TIME
 #LOWER VALUE: SLOWER, MORE STABLE (BEST IN SLOW NETWORK CONDITIONS)
@@ -46,6 +47,7 @@ def main(args):
     sys.exit(1)
   logger.info("Getting Data from API")
   #CREATE AN INSTANCE AND LOAD THE NEEDED DATA
+  
   Api = Process.CommunicateApi(returnedData)
   AcquiredPage = Api.Pages()
   AcquiredTags = Api.Tags()
@@ -187,6 +189,8 @@ if __name__ == "__main__":
       config = json.load(f)
     if _type == 1:
       return config["main"]["semaphore"]
+    elif _type == 2:
+      return config["main"]["Api"]
   def FileName():
     #THIS FUNCTION DELETES OLD LOGFILES, AND ASSIGNS A NAME TO THE NEW ONE
     if not os.path.isdir("Logs"): os.mkdir("Logs")
@@ -244,6 +248,8 @@ if __name__ == "__main__":
   #-------
   
   max_process_open = sconfig(1)
+  API_DATA_CONFIG = sconfig(2)
+  API_MIRROR_ACCOMPLISHED = False
   EMERGENCY = 255
   verbose = False
   info = '''
@@ -253,57 +259,85 @@ if __name__ == "__main__":
   group = parser.add_mutually_exclusive_group(required=True)
   group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [argument]")
   group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location]")
+  group.add_argument('-up', '--update', action="store_true", help="Checks for update and applies it")
   parser.add_argument('-v', '--verbose', action="store_true", help="Enable a verbose downloader")
   args = parser.parse_args()
   if args.verbose:
     verbose = True
+  elif args.update:
+    print("Initiating update are you sure? (Y/n)")
+    __choice_user = input().lower().strip()
+    if __choice_user == "y":  
+      Updater.github_sync()
+    sys.exit()
   request_status = []
   #CALL FUNCTIONS---
       
   
   #Catch error and main function calls
-  try: 
-    loggon.info(f"=============== System INFO ===============")
-    getSystemInfo(loggon)
-    loggon.info(f"===========================================")
-    if args.filecode:
-      if Process.CommunicateApi.File_iter.available:
-        
-        logger.warning("This method is still UNDER TESTING and MIGHT NOT WORK PROPERLY")
-        time.sleep(3)
-        with Process.CommunicateApi.File_iter(args.filecode) as iof:
-          for file_link in iof:
-            logger.info("Downloading link: %s" % file_link)
-            main(file_link)
-            print("-"*10)
+  def callers():
+    try:
+      Process.initialize(API_DATA_CONFIG) 
+      loggon.info(f"=============== System INFO ===============")
+      getSystemInfo(loggon)
+      loggon.info(f"===========================================")
+      if args.filecode:
+        if Process.CommunicateApi.File_iter.available:
+          
+          logger.warning("This method is still UNDER TESTING and MIGHT NOT WORK PROPERLY")
+          time.sleep(3)
+          with Process.CommunicateApi.File_iter(args.filecode) as iof:
+            for file_link in iof:
+              logger.info("Downloading link: %s" % file_link)
+              main(file_link)
+              print("-"*10)
+        else:
+          logger.error("This method is not available for the current module")
       else:
-        logger.error("This method is not available for the current module")
+        main(args.nukecode)
+    except urllib.error.HTTPError as e:
+      #ONLY OCCURS WHEN THERE IS NO RESULTS
+      if e.code == 404:
+        logger.error("The content you are looking for is not found")
+      else:
+        logger.error("HTTP Error Code: %s" % e.code)
+        if API_DATA_CONFIG["mirror_available"] and not API_MIRROR_ACCOMPLISHED:
+          return 101
+      sys.exit(1)
+    except urllib.error.URLError as error:
+      logger.error("A connection error has occured")
+      loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+      sys.exit(1)
+    except SystemExit as error:
+      if error.code == EMERGENCY:
+        os._exit(1)
+      else:
+        raise
+    except KeyboardInterrupt:
+        print("")
+        logger.info("Attempting to close thread..")
+        run_event.clear()
+        Thread1.join()
+        logger.info("Thread closed successfully")
+    except ModuleNotFoundError as error:
+      mod_dir =  f'Lib.{API_DATA_CONFIG["module_name"]}'
+      if error.name == mod_dir:
+        if API_MIRROR_ACCOMPLISHED:
+          logger.error("Mirror server is not available, traceback is saved on the recent log file")
+          loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+        else:
+          logger.error(f"Importing error, {error.name} is not a valid module, traceback is saved on the recent log file")
+          loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+    except:
+      logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
+      loggon.exception("Exception catched: %s" % sys.exc_info()[0])
+      sys.exit()
+  while True:
+    exit_code = callers()
+    if exit_code == 101:
+      logger.info("Mirror server enabled, trying mirror server.")
+      API_DATA_CONFIG["module_name"] = f'{API_DATA_CONFIG["module_name"]}_mirror'
+      API_MIRROR_ACCOMPLISHED = True
     else:
-      main(args.nukecode)
-  except urllib.error.HTTPError as e:
-    #ONLY OCCURS WHEN THERE IS NO RESULTS
-    if e.code == 404:
-      logger.error("The content you are looking for is not found")
-    else:
-      logger.error("HTTP Error Code: %s" % e.code)
-      
-    sys.exit(1)
-  except urllib.error.URLError as error:
-    logger.error("A connection error has occured")
-    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-    sys.exit(1)
-  except SystemExit as error:
-    if error.code == EMERGENCY:
-      os._exit(1)
-    else:
-      raise
-  except KeyboardInterrupt:
-      print("")
-      logger.info("Attempting to close thread..")
-      run_event.clear()
-      Thread1.join()
-      logger.info("Thread closed successfully")
-  except:
-    logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
-    loggon.exception("Exception catched: %s" % sys.exc_info()[0])
-    sys.exit()
+      break
+    
