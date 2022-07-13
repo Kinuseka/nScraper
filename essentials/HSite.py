@@ -25,6 +25,8 @@ finally:
     from datetime import timezone
     import datetime
     from pathlib import Path
+
+STDOUT = True
 DEBUG = False
 DUMMY = False
 cookie_path = os.path.join(os.getcwd(),".browser","cookies.pkl")
@@ -38,6 +40,10 @@ DISCONNECTED_MSG = 'Unable to evaluate script: disconnected: not connected to De
 
 def de_print(text):
     if DEBUG:
+        print(text)
+    
+def norm_print(text):
+    if STDOUT or DEBUG:
         print(text)
 
 
@@ -66,7 +72,7 @@ class CFBypass(threading.Thread):
             while self.driver.title == self.TARGET_NAME:
                 if not self.run_event.is_set():
                     break
-                print("Waiting for cloudflare...")
+                norm_print("Waiting for cloudflare...")
                 time.sleep(1)
             else:
                 de_print(self.driver.title)
@@ -93,7 +99,7 @@ class CFBypass(threading.Thread):
         try:
             cookies = pickle.load(open(cookie_path,"rb"))
         except FileNotFoundError:
-            print("Cookie not found")
+            norm_print("Cookie not found")
             return False
         self.driver.execute_cdp_cmd('Network.enable', {})
 
@@ -165,7 +171,7 @@ class SiteCFBypass(threading.Thread):
         self.driver.minimize_window()
         # driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36"})
         self.driver.get(self.link) 
-        print("Bypassing Cloudflare")
+        norm_print("Bypassing Cloudflare")
         self.cloudflare.start()
     
     def main(self):
@@ -185,7 +191,7 @@ class SiteCFBypass(threading.Thread):
                 if self.cloudflare.status:
                     self.page_source = self.driver.page_source
                     self.user_agent = self.driver.execute_script("return navigator.userAgent;")
-                    print('Process has finished Successfully')
+                    norm_print('Process has finished Successfully')
                     self.quitproto()
             else:
                 self.exc = self.cloudflare.exc
