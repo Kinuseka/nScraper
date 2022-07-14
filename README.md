@@ -21,7 +21,7 @@ A python script that collects data from NHentai.net.
 **Repositories:**
 
 
->[Ungoogled chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)
+>[Undetected Chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)
 
 
 **Supported Sites at the moment**
