@@ -1,5 +1,4 @@
 #Standard Library
-from cmath import inf
 import sys
 import os
 import time
@@ -24,10 +23,16 @@ import httpx
 #Custom library
 import Process
 from essentials import updater as Updater
+from essentials.Errors import exception as cferror
 
 #EDIT THE MAXIMUM AMOUNT OF DOWNLOAD PROCESS HAPPENING AT THE SAME TIME
 #LOWER VALUE: SLOWER, MORE STABLE (BEST IN SLOW NETWORK CONDITIONS)
 #HIGHER VALUE: FASTER, LESS STABLE (BEST IN FAST NETWORK CONDITIONS
+
+methods = [
+  "cfbypass",
+  "mirror"
+]
 
 class SortData:
     AcquiredTags = None
@@ -56,7 +61,7 @@ def main(args):
   Dir_name = Api.name
   
   logger.info("Found: %s pages" % AcquiredPage)
-  logger.info('Title name: "%s"' % TitleName)
+  logger.info('Title name: %s' % TitleName)
   logger.info("Acquiring direct links")
   AcquiredLinks = Api.Link_Page(AcquiredPage)
   logger.info("Total of: %s links is loaded" % len(AcquiredLinks))
@@ -229,8 +234,8 @@ if __name__ == "__main__":
   # Create handlers
   File = FileName()
   c_handler = logging.StreamHandler(sys.stdout)
-  o_handler = logging.FileHandler(File)
-  f_handler = logging.FileHandler(File)
+  o_handler = logging.FileHandler(File,mode="a",encoding='utf-8')
+  f_handler = logging.FileHandler(File,mode="a",encoding='utf-8')
   c_handler.setLevel(logging.INFO)
   o_handler.setLevel(logging.INFO)
   f_handler.setLevel(logging.INFO)
@@ -250,6 +255,7 @@ if __name__ == "__main__":
   max_process_open = sconfig(1)
   API_DATA_CONFIG = sconfig(2)
   API_MIRROR_ACCOMPLISHED = False
+  API_CF_ACCOMPLISHED = False
   EMERGENCY = 255
   verbose = False
   info = '''
@@ -295,16 +301,18 @@ if __name__ == "__main__":
           logger.error("This method is not available for the current module")
       else:
         main(args.nukecode)
-    except urllib.error.HTTPError as e:
+    except (urllib.error.HTTPError, cferror.NotFound, cferror.NetworkError) as e:
       #ONLY OCCURS WHEN THERE IS NO RESULTS
       if e.code == 404:
         logger.error("The content you are looking for is not found")
       else:
         logger.error("HTTP Error Code: %s" % e.code)
-        if API_DATA_CONFIG["mirror_available"] and not API_MIRROR_ACCOMPLISHED:
+        if API_DATA_CONFIG["cf_bypass"] and not API_CF_ACCOMPLISHED:
+          return 102
+        elif API_DATA_CONFIG["mirror_available"] and not API_MIRROR_ACCOMPLISHED:
           return 101
       sys.exit(1)
-    except urllib.error.URLError as error:
+    except (urllib.error.URLError, cferror.NetworkError) as error:
       logger.error("A connection error has occured")
       loggon.exception("Exception catched: %s" % sys.exc_info()[0])
       sys.exit(1)
@@ -334,7 +342,11 @@ if __name__ == "__main__":
       sys.exit()
   while True:
     exit_code = callers()
-    if exit_code == 101:
+    if exit_code == 102 and not API_CF_ACCOMPLISHED:
+      logger.info("Trying to bypass CF")
+      API_DATA_CONFIG["module_name"] = f'{API_DATA_CONFIG["module_name"]}_cf'
+      API_CF_ACCOMPLISHED = True
+    elif exit_code == 101 and not API_MIRROR_ACCOMPLISHED:
       logger.info("Mirror server enabled, trying mirror server.")
       API_DATA_CONFIG["module_name"] = f'{API_DATA_CONFIG["module_name"]}_mirror'
       API_MIRROR_ACCOMPLISHED = True
