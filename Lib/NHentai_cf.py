@@ -1,11 +1,10 @@
+import CFSession
 from logging import exception
 from bs4 import BeautifulSoup
 import re
 import json
-import yaml
-import requests
 import pickle
-
+import os
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
 site_domain = "net"
@@ -35,49 +34,22 @@ class Api:
     #NHENTAI SITE FORTUNATELY HAS A DEDICATED JSON EMBEDDED INTO A SCRIPT FILE THAT YOU CAN USE TO GAIN INFORMATION FROM THE SITE. 
     #DIFFERENT SITES MIGHT NOT HAVE A JSON FILE SO YOU WILL HAVE TO DO THE PROCESS MANUALLY
 
-    #Initialize path
-    self.cookie_path = HSite.cookie_path
-    self.session_path = HSite.session_path
-    self._data_level = data
-    #Check token
-    self.__reload_cf_token()
-    
-    #Load Cookies
-    s = requests.Session()
-    self.__set_cookies(s)
-    
-
     caught_exception = None
-    for t in range(0,2):
-      try:
-        content = s.get(data)
-        content.raise_for_status()
-        break
-      except requests.exceptions.HTTPError as e:
-        http_code = e.response.status_code
-        caught_exception = e
-        if http_code == 404:
-          raise cferror.NotFound()
-        elif http_code == 503:
-          #CF blocked us, update the token
-          #Recheck token
-          self.__reload_cf_token(reset=True)
-          self.__set_cookies(s)
-      except requests.exceptions.ConnectionError as e:
-        caught_exception = e
-        caught_message = "There has been issues with trying to connect"
-        raise cferror.NetworkError()
-
-    else:
-      caught_code = caught_exception.response.status_code
-      caught_content = caught_exception.response.content
-      caught_message = "There has been issues communicating with the server"
-      if caught_code == 503:
-        raise cferror.CloudflareBlocked(caught_code,caught_content)
-      raise cferror.HTTPError(caught_code,caught_content,caught_message)
-
-
-
+    try:
+      session = CFSession.cfSession()
+      content = session.get(data)
+      content.raise_for_status()
+    except CFSession.cfexception.HTTPError as e:
+      http_code = e.response.status_code
+      caught_exception = e
+      if http_code == 404:
+        raise cferror.NotFound()
+      else:
+        raise cferror.HTTPError
+    except CFSession.cfexception.CFException as e:
+      caught_exception = e
+      caught_message = "There has been issues with trying to connect"
+      raise cferror.NetworkError()
     page = content.content
     self.soup = BeautifulSoup(page, "html.parser")
     script = (self.soup.find_all("script")[2].contents[0]).strip().replace("window._gallery = JSON.parse(", "").replace(");","")
