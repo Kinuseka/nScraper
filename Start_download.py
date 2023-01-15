@@ -40,7 +40,9 @@ class SortData:
     AcquiredLinks = None
     TitleName = None
     Download_directory = None
-    
+#Error Statistics threshold constants
+RETRY_THRESHOLD = 6
+PERCENTAGE_THRESHOLD = 0.05
 
 def main(args):
   global run_event
@@ -143,9 +145,9 @@ def statuschecker(verbose,run_event):
         logger.info("\nDownload failed, some pages did not load correctly")
         ready = True
       if retry_attempts != 0 and ready:
-        percentage = round((retry_attempts/(Links*6))*100,2)
+        percentage = round((retry_attempts/(Links*RETRY_THRESHOLD))*100,2)
         logger.info(f"Retry rate: {retry_attempts}({percentage}%)")
-        if retry_attempts >= round((Links*5)*0.05,2):
+        if retry_attempts >= round((Links*RETRY_THRESHOLD)*PERCENTAGE_THRESHOLD,2):
           logger.warning(f"Retry rates exceed 5% of the acceptable threshold, if you are on a slow network condition, please reduce 'semaphore' variable on 'config.json' to reduce network congestion")
       break
   else:
