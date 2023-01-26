@@ -18,6 +18,11 @@ A python script that collects data from NHentai.net.
 >pyyaml
 >undetected-chromedriver 
 ```
+
+**Installation: **
+`git clone https://github.com/Kinuseka/NHentaiAPI.git`
+
+
 **Repositories:**
 
 
@@ -39,7 +44,7 @@ A python script that collects data from NHentai.net.
 
 ## Note:
 > Bypassing cloudflare requires a modified selenium which does not support headless mode. If you are not on a 
-desktop environment, you are better off setting `cf_bypass` to `false` in config.json.
+desktop environment, install a virtual desktop using xvfb. Then run it as xvfb-run python Startdownload.py -n <Num>
 
 > Mirror server is enabled by default incase the official site is not available, if you prefer
 to disable this. Please set "mirror_available" to `false` in config.json
@@ -48,3 +53,20 @@ to disable this. Please set "mirror_available" to `false` in config.json
 though they are being continually updated as time goes.
 
 
+## XVFB INSTALLATION
+You can run this program using XVFB if you are trying to run this on headless mode (console only)
+
+Here's how:
+
+
+Install xvfb: 
+
+
+Ubuntu/Debian: 
+
+`sudo apt install xvfb` 
+
+CentOS: `yum install xorg-x11-server-Xvfb`
+
+
+Then run it as `xvfb-run python Startdownload.py -n <Num>`
