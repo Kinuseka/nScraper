@@ -62,9 +62,7 @@ Here's how:
 Install xvfb: 
 
 
-Ubuntu/Debian: 
-
-`sudo apt install xvfb` 
+Ubuntu/Debian: `sudo apt install xvfb` 
 
 CentOS: `yum install xorg-x11-server-Xvfb`
 
