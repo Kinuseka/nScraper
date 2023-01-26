@@ -29,6 +29,7 @@ from essentials.Errors import exception as cferror
 #LOWER VALUE: SLOWER, MORE STABLE (BEST IN SLOW NETWORK CONDITIONS)
 #HIGHER VALUE: FASTER, LESS STABLE (BEST IN FAST NETWORK CONDITIONS
 
+Process.init_datas()
 methods = [
   "cfbypass",
   "mirror"
