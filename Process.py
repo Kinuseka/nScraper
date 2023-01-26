@@ -133,7 +133,9 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
       recent_exp = None
       while not redo >= attempts:
         try:
-          return await client.head(link)
+          resp = await client.head(link)
+          resp.raise_for_status()
+          return resp
         except httpx.HTTPError as e:
           redo += 1
           recent_exp = e
@@ -193,7 +195,6 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
         #If dump does not exist
         #Get headers
         resp = await _get_head(client, link)
-        resp.raise_for_status()
         #Preload progress
         Data.progress_status[title_value] = {"bool":False,"Bytes":0,"Max":False}
         #Get header content
