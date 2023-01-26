@@ -122,164 +122,171 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
     sem - Semaphore object
     task_status - TaskGroup object. call task_status.started() to start another Task. Failure to call the method will cause the program to fail.
     """
-    def __complete_return():
-        VolatileData.response_proc.append(True)
-        Data.progress_status[title_value]["bool"] = True
-        return True
-    def __complete_resume():
-        
-        #Data.progress_status[title_value]["bool"] = bool
+    """
+    Download a file from the given URL and save it to the specified save path.
+    If there is a failure, the function will retry the download up to MAX_RETRIES times.
+    If the download was interrupted, it will continue from the last downloaded byte
+    """
+    #Functions
+    async def _get_head(client,link: str, return_err: bool = False, attempts: int = 5):
+      redo = 0
+      recent_exp = None
+      while not redo >= attempts:
         try:
-            if os.path.getsize(download_path) == Data.progress_status[title_value]["Max"]:
-                VolatileData.response_proc.append(True)
-                return True
-            os.remove(download_path)
-            return False
-        except FileNotFoundError:
-            return False
-    def __incomplete_return():
-        VolatileData.response_proc.append(False)
-        Data.progress_status[title_value]["bool"] = False
-        return False
-    def __incomplete_resume():
-        try:
-            if os.path.getsize(download_path) == Data.progress_status[title_value]["Bytes"]:
-                return True
-            os.remove(download_path)
-            return False
-        except FileNotFoundError:
-            return False
-        
-    def __reset_progress():
-        Data.progress_status[title_value] = {"bool":False,"Bytes":0,"Max":False}
-    file = title_value
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36"}
-    download_path = ""
-    
-    continued = False
-    manual_fix = False
-    #start = time.process_time()
-    timeout = 0
-    Data_psnap = 0
-    Data_tsnap = 0
-    
-    task_status.started() #Task is ready
-    
-    try:
-      if Data.progress_status[title_value]["bool"]:
-        download_path =  os.path.normpath(Data.progress_status[title_value]["directory"])
-        if __complete_resume():
-            return True
-        else:
-            __reset_progress()
-      elif Data.progress_status[title_value]["Max"]:
-        download_path =  os.path.normpath(Data.progress_status[title_value]["directory"])
-        Data_tsnap = Data.progress_status[title_value]["Max"] 
-        Data_psnap = Data.progress_status["Bytes"]
-        if __incomplete_resume():
-            headers["Range"] = "bytes=%d-" % Data_psnap
-        else:
-            __reset_progress()
-        continued = True 
-    except KeyError as e: 
-      Data.progress_status[title_value] = {"bool":False,"Bytes":0,"Max":False}
-        
-    while True:
+          resp = await client.head(link)
+          resp.raise_for_status()
+          return resp
+        except httpx.HTTPError as e:
+          redo += 1
+          recent_exp = e
+          loggon.exception(f'Error collecting header {redo}/{attempts}')
+      else:
+        raise recent_exp if recent_exp else AttributeError('Error had occured but cannot find the error')
+    def _check_if_done(Data: dict):
+      "Check early if the progress is on dump and the file exists. This function is important to reduce strain on the remote server"
       try:
-        #Downloader
-        async with client.stream('GET',link,headers=headers) as resp:
-          
-          format_file = resp.headers.get('Content-Type').replace("image/","")
-          file_name = ("%s.%s" % (file, format_file))
-          Data.progress_status[title_value]["directory"] = download_path = os.path.join(os.getcwd(),location,file_name)
-         
-          
-          loggon.info(f"<{title_value}> Connection Code: {resp.status_code}")
-          response_code = resp.status_code
-          if response_code < 300 and response_code >= 200:
-            if response_code not in (200,206):
-                loggon.warning(f"<{title_value}> Unexpected SUCCESSFUL HTTP response code: {response_code}")
-          else:
-            loggon.warning(f"<{title_value}> Unexpected http response code: {response_code}")
-            continue 
-        
-          
-            
-          if not continued and not manual_fix:
-            if os.path.isfile(download_path):
-                current_size = os.path.getsize(download_path)
-                file_size = int(resp.headers.get("content-length"))
-                Data.progress_status[title_value]["Max"] = file_size
-                Data.progress_status[title_value]["Bytes"] = current_size 
-              
-                if current_size == file_size:
-                    return __complete_return()
-                elif current_size > file_size:
-                    Data.progress_status[title_value]["Bytes"] = 0
-                    Data.progress_status[title_value]["Max"] = False
-                    os.remove(download_path)
-                    
-                    continue
+        dl_path = Data.progress_status[title_value]["directory"]
+        if os.path.getsize(dl_path) == Data.progress_status[title_value]["Max"]:
+          return True
+        os.remove(dl_path)
+        return False
+      except FileNotFoundError:
+        return False
+      except KeyError:
+        return False
+    def _no_data_check(size: int, downloaded: int):
+      "Check the current state of the data received and the actual data got, this is an important function to identify the currect action needed"
+      if downloaded == size:
+        return 0
+      elif downloaded < size:
+        return 1
+      elif downloaded > size:
+        return 2
+    def _invoke_finish(cond: bool):
+      Data.progress_status[title_value]["bool"] = cond
+      VolatileData.response_proc.append(cond)
+    task_status.started() #This starts the child process
+    #Before start, check if download gas occured before
+    if _check_if_done(Data):
+      _invoke_finish(True)
+      return True
+    #Set initial values
+    MAX_RETRIES = 6
+    retries = 0
+    headers = {}
+    downloaded_size = 0
+    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36"
+    # print(location)
+    #Load client
+    async with httpx.AsyncClient() as client:
+      #Get headers
+      try:
+        #If dump is loaded
+        download_path =  os.path.normpath(Data.progress_status[title_value]["directory"])
+        downloaded_ondata_max = Data.progress_status[title_value]['Max']
+        downloaded_ondata_current = Data.progress_status[title_value]['Bytes']
+        downloaded_size = os.path.getsize(download_path) if os.path.exists(download_path) else 0
+        #Synchronize Dump from actual file size
+        if downloaded_size != downloaded_ondata_current:
+          Data.progress_status[title_value]['Bytes'] = downloaded_size
+          downloaded_ondata_current = downloaded_size
+        _action_type =  _no_data_check(downloaded_ondata_max, downloaded_ondata_current)
+      except KeyError:
+        #If dump does not exist
+        #Get headers
+        resp = await _get_head(client, link)
+        #Preload progress
+        Data.progress_status[title_value] = {"bool":False,"Bytes":0,"Max":False}
+        #Get header content
+        format_file = resp.headers.get('Content-Type').replace("image/","")
+        file_name = ("%s.%s" % (title_value, format_file))
+        download_path = os.path.join(os.getcwd(),location,file_name)
+        Data.progress_status[title_value]["directory"] = download_path
+        #Configure loaded data
+        save_path = os.path.join(location,file_name)
+        downloaded_size = os.path.getsize(save_path) if os.path.exists(save_path) else 0
+        _action_type =  _no_data_check(int(resp.headers.get('content-length', 0)), downloaded_size)
+      #Initialize data
+      loggon.info(f'Action required code: {_action_type}')
+      if _action_type == 0:
+        Data.progress_status[title_value]["Max"] = downloaded_size
+        Data.progress_status[title_value]["Bytes"] = downloaded_size
+        _invoke_finish(True)
+        return True
+      elif _action_type == 1:
+        pass
+      elif _action_type == 2:
+        #Reset download due to override
+        os.remove(download_path)
+      Data.progress_status[title_value]["Max"] = downloaded_size
+      headers['Range'] = f"bytes={downloaded_size}-"
+      headers = {}
+      #====
+      while retries <= MAX_RETRIES:
+          Data.progress_status[title_value]["Max"] = downloaded_size
+          try:
+              async with client.stream('GET', link, headers=headers) as response:
+                response.raise_for_status()
+                response_code = response.status_code
+                #Check expected response code
+                if response_code < 300 and response_code >= 200:
+                  if response_code not in (200,206):
+                      loggon.warn(f"<{title_value}> Unexpected SUCCESSFUL HTTP response code: {response_code}")
                 else:
-                  loggon.info(f"<{title_value}> Manual download resume")
-                  Data_tsnap = file_size
-                  Data_psnap = current_size
-                  headers["Range"] = "bytes=%d-" % Data_psnap
-                  manual_fix = True 
+                  loggon.error(f"<{title_value}> Unexpected http response code: {response_code}")
                   continue
-                  
-                    
-        
-          
-          if not continued and not manual_fix:
-            Data.progress_status[title_value]["Max"] = int(resp.headers.get('content-length'))
-            Data_tsnap += int(resp.headers.get('content-length'))
-        
-        
-          async with await anyio.open_file(download_path, "ab") as asf:
-            async for chunk in resp.aiter_bytes(4096):
-              
-              Data_psnap += len(chunk)
-              Data.progress_status[title_value]["Bytes"] = Data_psnap
-              if not Data_psnap <= Data_tsnap:
-                  loggon.exception(f"<{title_value}> File out of bounds resetting..")
-                  __reset_progress()
-                  continued = False
-                  manual_fix = False
-                  break
-                  
-                  
-              await asf.write(chunk)
-            else:
-              return __complete_return()
-            continue
-          
-          
-      except httpx.HTTPError as e:
-        timeout += 1
-        if timeout < 7:
-          loggon.exception(f"<{title_value}>Problem occured, retrying {timeout}/6")
-          VolatileData.retry_proc.append(True)
-          if manual_fix:
-              Data.progress_status[title_value]["Bytes"] = 0
-             
-              if os.path.isfile(download_path):
-                os.remove(download_path)
-          await anyio.sleep(2)
-          continue
-        print(f"\nP:{title_value},Error: {e}, full data on logs")
-        loggon.exception("DLException: ")
-        return __incomplete_return()
+                async with await anyio.open_file(download_path, "ab") as asf:
+                    # check if the file is partially downloaded
+                    if response.headers.get("Content-Range"):
+                        loggon.info(f"Resuming download from byte {downloaded_size}")
+                    #Log all progress
+                    max_size = int(response.headers.get("Content-Length", 0))
+                    total_size = max_size + downloaded_size
+                    Data.progress_status[title_value]["Max"] += max_size         
+                    Data.progress_status[title_value]["Bytes"] = total_size
+                    async for chunk in response.aiter_bytes():
+                        downloaded_size += len(chunk)
+                        Data.progress_status[title_value]["Bytes"] = downloaded_size
+                        await asf.write(chunk)
+                loggon.info(f"Downloaded {downloaded_size} of {total_size} bytes")
+                _invoke_finish(True)
+                return True
+          except httpx.HTTPError as e:
+            retries += 1
+            #Retry 0-[max retries] times
+            if retries < 7:
+              loggon.exception(f"\nP:{title_value},Error: {e}, full data on logs")
+              loggon.info(f"<{title_value}>Problem occured, retrying {retries}/6")
+              VolatileData.retry_proc.append(True)
+              await anyio.sleep(1)
+              continue
+            Data.progress_status[title_value]["bool"] = False
+            VolatileData.response_proc.append(False)
+            loggon.exception("DLException: ")
+            _invoke_finish(False)
+            return False
+      else:
+        _invoke_finish(False)
+        return False 
   async with sem: 
     return await __start_process()
     
+#del Process.Data.retry_proc[:]
+      #del Process.Data.response_proc[:]
+      #Process.Data.total = 0
+      #Process.Data.progress = 0
+
 class Data_raw:
   def __init__(self):
+    self.progress_status = {}
+
+  def reset(self):
     self.progress_status = {}
 class VData:
   def __init__(self):
     self.response_proc = []
     self.retry_proc = [] 
+    self.data = Data
   
   def total(self):
     Max = 0
@@ -292,8 +299,25 @@ class VData:
     for n in list(Data.progress_status):
       Bytes += Data.progress_status[n]["Bytes"]
     return Bytes
-Data = Data_raw()  
-VolatileData = VData()
+  
+  def reset(self):
+    self.response_proc = []
+    self.retry_proc = [] 
+    self.data = Data
+  
+def reset_datas():
+  global Data
+  global VolatileData
+  try:
+    Data = Data.reset()
+    VolatileData = VolatileData.reset()
+  except AttributeError:
+    pass
+def init_datas():
+  global Data
+  global VolatileData
+  Data = Data_raw()  
+  VolatileData = VData()
 
 if __name__ == "__main__":
   pass
