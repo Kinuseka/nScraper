@@ -1,5 +1,5 @@
 # nScraper
-A python script that collects data from API. 
+A python script downloader
 
 ## Current Supported sites
 * **NHentai.net**
