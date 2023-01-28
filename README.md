@@ -46,6 +46,8 @@ A python script downloader
 > Bypassing cloudflare requires a modified selenium which does not support headless mode. If you are not on a 
 desktop environment, install a virtual desktop using xvfb. Then run it as xvfb-run python Startdownload.py -n <Num>
 
+> If your environment does not have a desktop nor supports xvfb, then you are better off using a mirror sites which is not protected by cloudflare
+
 > Mirror server is enabled by default incase the official site is not available, if you prefer
 to disable this. Please set "mirror_available" to `false` in config.json
 
