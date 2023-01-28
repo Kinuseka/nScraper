@@ -1,4 +1,4 @@
-# NHentai API
+# nScraper
 A python script that collects data from NHentai.net. 
 
 **Goals**
