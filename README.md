@@ -2,7 +2,7 @@
 A python script downloader
 
 ## Current Supported sites
-* **NHentai.net**
+* **NHentai.net [Mirror site: Nhentai.to]**
 
 ## About
 
@@ -25,7 +25,7 @@ A python script downloader
 ```
 
 **Installation: **
-`git clone https://github.com/Kinuseka/NHentaiAPI.git`
+`git clone https://github.com/Kinuseka/nScraper.git`
 
 
 **Repositories:**
@@ -34,15 +34,10 @@ A python script downloader
 >[Undetected Chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)
 
 
-**Supported Sites at the moment**
-```
-• NHentai.net[Mirror sites: Nhentai.to])
-```
-
 ## Run:
 `python Start_download.py [args -n/--nuke-code]`
 **ex:**
-`python Start_download.py -n 401084`
+`python Start_download.py -n 401084` or `https://nhentai.net/g/401084`
 
 
 
