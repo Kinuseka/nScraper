@@ -24,19 +24,20 @@ A python script downloader
 >undetected-chromedriver 
 ```
 
-**Installation: **
+**Installation:**
 `git clone https://github.com/Kinuseka/nScraper.git`
 
 
 **Repositories:**
 
-
->[Undetected Chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)
+>[CFSession](https://github.com/Kinuseka/CFSession)
 
 
 ## Run:
 `python Start_download.py [args -n/--nuke-code]`
+
 **ex:**
+
 `python Start_download.py -n 401084` or `https://nhentai.net/g/401084`
 
 
@@ -58,10 +59,7 @@ though they are being continually updated as time goes.
 ## XVFB INSTALLATION
 You can run this program using XVFB if you are trying to run this on headless mode (console only)
 
-Here's how:
-
-
-Install xvfb: 
+**Install xvfb:**
 
 
 Ubuntu/Debian: `sudo apt install xvfb` 
