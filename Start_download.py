@@ -137,6 +137,7 @@ def statuschecker(verbose,run_event):
       #Process.Data.progress = 0
       ready = False
       result = request_status.count(True) == len(request_status)
+      unknown_res = request_status.count(2)
       if result:
         print("")
         logger.info("Download completed successfully")
@@ -144,6 +145,9 @@ def statuschecker(verbose,run_event):
       else:
         print("")
         logger.info("\nDownload failed, some pages did not load correctly")
+        if unknown_res:
+          logger.warning(f"Some pages encountered unexpected errors. Please report these logs.")
+          print(f"Log name: {File}")
         ready = True
       if retry_attempts != 0 and ready:
         percentage = round((retry_attempts/(Links*RETRY_THRESHOLD))*100,2)
@@ -156,9 +160,8 @@ def statuschecker(verbose,run_event):
   with open(Data_pickledirectory, "wb") as f:
     data = Process.Data
     pickle.dump(data, f, protocol=4)
-        
-    
-    
+  Process.VolatileData.reset()
+  Process.Data.reset()
     
 async def amain():
   DLInst = Process
@@ -269,16 +272,24 @@ if __name__ == "__main__":
   group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [argument]")
   group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location]")
   group.add_argument('-up', '--update', action="store_true", help="Checks for update and applies it")
-  parser.add_argument('-v', '--verbose', action="store_true", help="Enable a verbose downloader")
+  group.add_argument('-v', '--version', action="store_true", help="Show version")
   args = parser.parse_args()
-  if args.verbose:
-    verbose = True
-  elif args.update:
-    print("Initiating update are you sure? (Y/n)")
-    __choice_user = input().lower().strip()
-    if __choice_user == "y":  
-      Updater.github_sync()
+  if args.version:
+    print(f"nScraper - V{Updater.ConstructVerion(Updater.CurrentVersion())}")
+    print("https://github.com/Kinuseka")
     sys.exit()
+  elif args.update:
+    if Updater._new_update():
+      Updater.show_update(logger,loggon)
+      print("Initiating update are you sure? (Y/n)")
+      __choice_user = input().lower().strip()
+      if __choice_user == "y":  
+        Updater.upgrade()
+    else:
+      print('Version already up to date!')
+    sys.exit()
+  elif args.filecode:
+    logger.warning("This method is still UNDER TESTING and MIGHT NOT WORK PROPERLY")
   request_status = []
   #CALL FUNCTIONS---
       
@@ -291,11 +302,10 @@ if __name__ == "__main__":
       getSystemInfo(loggon)
       loggon.info(f"===========================================")
       if args.filecode:
-        if Process.CommunicateApi.File_iter.available:
-          
-          logger.warning("This method is still UNDER TESTING and MIGHT NOT WORK PROPERLY")
+        FileIterator = Process.CommunicateApi.File_iter(args.filecode)
+        if FileIterator:
           time.sleep(3)
-          with Process.CommunicateApi.File_iter(args.filecode) as iof:
+          with FileIterator as iof:
             for file_link in iof:
               logger.info("Downloading link: %s" % file_link)
               main(file_link)
@@ -343,6 +353,7 @@ if __name__ == "__main__":
       logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
       loggon.exception("Exception catched: %s" % sys.exc_info()[0])
       sys.exit()
+  threading.Thread(target=Updater.init).start()
   while True:
     exit_code = callers()
     if exit_code == 102 and not API_CF_ACCOMPLISHED:
@@ -355,4 +366,5 @@ if __name__ == "__main__":
       API_MIRROR_ACCOMPLISHED = True
     else:
       break
+  Updater.show_update(logger, loggon)
     
