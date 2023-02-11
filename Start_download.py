@@ -118,7 +118,7 @@ def statuschecker(verbose,run_event):
     with open(Data_pickledirectory, "rb") as f: 
         try:
           Process.Data = pickle.load(f)
-        except (EOFError,pickle.UnpicklingError):
+        except (EOFError, pickle.UnpicklingError, MemoryError):
             pass
   while run_event.is_set():
     time.sleep(0.1)
@@ -307,9 +307,16 @@ if __name__ == "__main__":
           time.sleep(3)
           with FileIterator as iof:
             for file_link in iof:
-              logger.info("Downloading link: %s" % file_link)
-              main(file_link)
-              print("-"*10)
+              try:
+                logger.info("Downloading link: %s" % file_link)
+                main(file_link)
+              except (urllib.error.HTTPError, cferror.NotFound) as e:
+                if e.code == 404:
+                  logger.error("The content you are looking for is not found")
+                else:
+                  raise e
+              finally:
+                print("-"*10)
         else:
           logger.error("This method is not available for the current module")
       else:
