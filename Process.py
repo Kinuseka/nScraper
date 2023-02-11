@@ -276,8 +276,6 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
               VolatileData.retry_proc.append(True)
               await anyio.sleep(1)
               continue
-            Data.progress_status[title_value]["bool"] = False
-            VolatileData.response_proc.append(False)
             loggon.exception("DLException: ")
             _invoke_finish(False)
             return False
