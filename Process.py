@@ -80,8 +80,7 @@ class CommunicateApi:
   Used for the __main__ to communicate with the NHentai.py(In default).
   Usually does not require modifying this unless if you want to add missing features
   """
-  def __init__(self, data):
-      
+  def __init__(self, data):   
       self._Handler = Lib.Api(data)
       self.name = self._Handler.name
   def Pages(self):
@@ -107,7 +106,23 @@ class CommunicateApi:
     data_list = [self._Handler.Direct_link(x) for x in range(1,(int(var)+1))]
     return data_list
   def File_iter(data):
-    return Lib.Iterdata(data)
+    try:
+      Iter = Lib.Iterdata(data)
+      if not Iter.available:
+        return False
+      return Iter
+    except (AttributeError, TypeError) as e:
+      return False
+  def version():
+    try:
+      return Lib.Current_Version
+    except AttributeError:
+      return False
+  def version_host():
+    try:
+      return Lib.Version_Host
+    except AttributeError:
+      return False
 
 async def Queue(link,title_value,location,client,loggon,sem,task_status):
   async def __start_process():
@@ -244,7 +259,7 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
                     total_size = max_size + downloaded_size
                     Data.progress_status[title_value]["Max"] += max_size         
                     Data.progress_status[title_value]["Bytes"] = total_size
-                    async for chunk in response.aiter_bytes():
+                    async for chunk in response.aiter_bytes(chunk_size=8192):
                         downloaded_size += len(chunk)
                         Data.progress_status[title_value]["Bytes"] = downloaded_size
                         await asf.write(chunk)
@@ -257,6 +272,7 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
             if retries < 7:
               loggon.exception(f"\nP:{title_value},Error: {e}, full data on logs")
               loggon.info(f"<{title_value}>Problem occured, retrying {retries}/6")
+              headers["Range"] = f"bytes={downloaded_size}-"
               VolatileData.retry_proc.append(True)
               await anyio.sleep(1)
               continue
@@ -269,8 +285,12 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
         _invoke_finish(False)
         return False 
   async with sem: 
-    return await __start_process()
-    
+    try:
+      return await __start_process()
+    except Exception as e:
+      loggon.exception('Unknown Error')
+      VolatileData.response_proc.append(2)
+      return 2
 #del Process.Data.retry_proc[:]
       #del Process.Data.response_proc[:]
       #Process.Data.total = 0
