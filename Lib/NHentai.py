@@ -83,19 +83,26 @@ class Iterdata:
     self.data = data
     self._index = -1
     self.temptxt = []
+  
+  def extract_numbers(self, text):
+    pattern = r'(http[s]?://nhentai\.net/g/(\d{1,6})|(\d{1,6}))'
+    matches = re.findall(pattern, text)
+
+    links_and_numbers = []
+    for match in matches:
+        if match[0].startswith("http") or match[0].startswith("https"):
+            links_and_numbers.append(match[0])
+        else:
+            links_and_numbers.append(match[2])
+    return links_and_numbers
+  
   def __iter__(self):
     return self
   def __enter__(self):
     self.txt_line = open(self.data,"r")
-    for rawline in self.txt_line:
-      for tline in rawline.replace(","," ").split():
-        if not tline.isdigit():
-          continue
-        if len(tline) > 6:
-          long_line = re.findall('.{1,6}', tline)
-          for fixline in long_line:
-            self.temptxt.append(fixline)
-        self.temptxt.append(tline)
+    full_txt = self.txt_line.read()
+    extracted = self.extract_numbers(full_txt)
+    self.temptxt = extracted  
     return self
   def __next__(self):
     self._index += 1 
