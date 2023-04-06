@@ -117,7 +117,7 @@ def statuschecker(verbose,run_event):
   if os.path.isfile(Data_pickledirectory):
     with open(Data_pickledirectory, "rb") as f: 
         try:
-          Process.Data = pickle.load(f)
+            Process.Data = pickle.load(f)
         except (EOFError, pickle.UnpicklingError, MemoryError):
             pass
   while run_event.is_set():
@@ -360,7 +360,7 @@ if __name__ == "__main__":
       logger.error("An unknown error was found while getting data from API, traceback is saved on the recent log file")
       loggon.exception("Exception catched: %s" % sys.exc_info()[0])
       sys.exit()
-  threading.Thread(target=Updater.init).start()
+  threading.Thread(target=Updater.init,daemon=True).start()
   while True:
     exit_code = callers()
     if exit_code == 102 and not API_CF_ACCOMPLISHED:
