@@ -76,7 +76,7 @@ def show_update(logger, loggon):
         logger.warn("This version is from the future, might be unstable.")
         logger.info(f"Available: v{ConstructVerion(Version())} | Your version: v{ConstructVerion(CurrentVersion())}")
     message = UpdateInformation.Message
-    if message:
+    if all((new_update, message)) or all((future_update, message)):
         logger.info(f'[Announce]: {message}')
 
 def _new_update():
