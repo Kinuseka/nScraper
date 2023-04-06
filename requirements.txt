@@ -2,8 +2,6 @@ anyio==3.3.0
 anyio[trio]==3.3.0
 trio==0.19.0
 beautifulsoup4==4.9.3
-bs4==0.0.1
 httpx==0.18.1
 pyyaml
-requests
 CFSession>=0.2.1
