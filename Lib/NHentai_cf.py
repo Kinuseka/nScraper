@@ -39,7 +39,7 @@ class Api:
       session = CFSession.cfSession()
       content = session.get(data)
       content.raise_for_status()
-    except CFSession.cfexception.HTTPError as e:
+    except (CFSession.cfexception.HTTPError, CFSession.cfexception.NotFound ) as e:
       http_code = e.response.status_code
       caught_exception = e
       if http_code == 404:
@@ -52,9 +52,10 @@ class Api:
       raise cferror.NetworkError()
     page = content.content
     self.soup = BeautifulSoup(page, "html.parser")
-    script = (self.soup.find_all("script")[2].contents[0]).strip().replace("window._gallery = JSON.parse(", "").replace(");","")
+    json_regex = r'JSON\.parse\("(.*?)"\)'
+    script = re.search(json_regex, (self.soup.find_all("script")[2].contents[0]).strip()).group(1).encode("utf-8").decode("unicode-escape")
     #IF THERE IS NO ERROR THEN PROCEED
-    self.json = json.loads(json.loads(script))
+    self.json = json.loads(script)
 
 
     self.__preloader_pages()
@@ -104,7 +105,7 @@ class Api:
     data = []
     try:
       for v in range(self.Pages()):
-        data.append(dict_data[f"{v+2}"])
+         data.append(dict_data[f"{v+2}"])
     except TypeError as e:
       data = dict_data
     self.preloaded_data = data

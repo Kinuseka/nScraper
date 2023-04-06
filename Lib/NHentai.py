@@ -33,9 +33,10 @@ class Api:
     req = urllib.request.Request(data, headers=headers)
     page = urllib.request.urlopen(req)
     self.soup = BeautifulSoup(page, "html.parser")
-    script = (self.soup.find_all("script")[2].contents[0]).strip().replace("window._gallery = JSON.parse(", "").replace(");","")
+    json_regex = r'JSON\.parse\("(.*?)"\)'
+    script = re.search(json_regex, (self.soup.find_all("script")[2].contents[0]).strip()).group(1).encode("utf-8").decode("unicode-escape")
     #IF THERE IS NO ERROR THEN PROCEED
-    self.json = json.loads(json.loads(script))
+    self.json = json.loads(script)
 
   def Pages(self):
     "Total available pages count"
