@@ -95,7 +95,6 @@ class Iterdata:
         else:
             links_and_numbers.append(match[2])
     return links_and_numbers
-  
   def __iter__(self):
     return self
   def __enter__(self):
