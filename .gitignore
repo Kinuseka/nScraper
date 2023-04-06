@@ -1,0 +1,10 @@
+*
+!.gitignore
+!config.json
+!LICENSE
+!Process.py
+!README.md
+!requirements.txt
+!Start_download.py
+!Lib/
+!essentials/
