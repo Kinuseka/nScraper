@@ -281,10 +281,10 @@ if __name__ == "__main__":
   elif args.update:
     if Updater._new_update():
       Updater.show_update(logger,loggon)
-      print("Initiating update are you sure? (Y/n)")
+      print("Initiating update are you sure? (Y/n)",end="")
       __choice_user = input().lower().strip()
       if __choice_user == "y":  
-        Updater.upgrade()
+        Updater.upgrade(loggon)
     else:
       print('Version already up to date!')
     sys.exit()
