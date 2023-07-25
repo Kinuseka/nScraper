@@ -3,6 +3,7 @@ import re
 import json
 import yaml
 import urllib.request
+import Lib.NHentai as NHentai
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
 site_domain = "to"
@@ -107,35 +108,5 @@ class Api:
       data = dict_data
     self.preloaded_data = data
    
-class Iterdata:
-  """File Iterator used to automatically detect links inside a text file
-  """
-  def __init__(self,data):
-    self.available = True #Used to indicate that the feature is available. False if none
-    self.data = data
-    self._index = -1
-    self.temptxt = []
-  def __iter__(self):
-    return self
-  def __enter__(self):
-    self.txt_line = open(self.data,"r")
-    for rawline in self.txt_line:
-      for tline in rawline.replace(","," ").split():
-        if not tline.isdigit():
-          continue
-        if len(tline) > 6:
-          long_line = re.findall('.{1,6}', tline)
-          for fixline in long_line:
-            self.temptxt.append(fixline)
-        self.temptxt.append(tline)
-    return self
-  def __next__(self):
-    self._index += 1 
-    if self._index >= len(self.temptxt):
-      raise StopIteration
-    return self.temptxt[self._index] 
-  def __reversed__(self):
-    return self.temptxt[::-1]
-  def __exit__(self,tp,v,tb):
-    self.txt_line.close()
+Iterdata = NHentai.Iterdata
     

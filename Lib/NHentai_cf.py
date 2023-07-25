@@ -5,6 +5,7 @@ import re
 import json
 import pickle
 import os
+import Lib.NHentai as NHentai
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
 site_domain = "net"
@@ -126,43 +127,7 @@ class Api:
     for cookie in cookies:
       session.cookies.set(cookie['name'], cookie['value'], domain=cookie['domain'])
    
-class Iterdata:
-  """File Iterator used to automatically detect links inside a text file
-  """
-  def __init__(self,data):
-    self.available = True #Used to indicate that the feature is available. False if none
-    self.data = data
-    self._index = -1
-    self.temptxt = []
-  
-  def extract_numbers(self, text):
-    pattern = r'(http[s]?://nhentai\.net/g/(\d{1,6})|(\d{1,6}))'
-    matches = re.findall(pattern, text)
-
-    links_and_numbers = []
-    for match in matches:
-        if match[0].startswith("http") or match[0].startswith("https"):
-            links_and_numbers.append(match[0])
-        else:
-            links_and_numbers.append(match[2])
-    return links_and_numbers
-  def __iter__(self):
-    return self
-  def __enter__(self):
-    self.txt_line = open(self.data,"r")
-    full_txt = self.txt_line.read()
-    extracted = self.extract_numbers(full_txt)
-    self.temptxt = extracted  
-    return self
-  def __next__(self):
-    self._index += 1 
-    if self._index >= len(self.temptxt):
-      raise StopIteration
-    return self.temptxt[self._index] 
-  def __reversed__(self):
-    return self.temptxt[::-1]
-  def __exit__(self,tp,v,tb):
-    self.txt_line.close()
+Iterdata = NHentai.Iterdata
     
     
 
