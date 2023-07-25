@@ -4,4 +4,4 @@ trio==0.19.0
 beautifulsoup4==4.9.3
 httpx==0.18.1
 pyyaml
-CFSession>=0.2.1
+CFSession>=1.0.0
