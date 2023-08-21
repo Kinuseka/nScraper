@@ -281,7 +281,7 @@ if __name__ == "__main__":
   elif args.update:
     if Updater._new_update():
       Updater.show_update(logger,loggon)
-      print("Initiating update are you sure? (Y/n)",end="")
+      print("Initiating update are you sure? (y/N)",end="")
       __choice_user = input().lower().strip()
       if __choice_user == "y":  
         Updater.upgrade(loggon)
