@@ -31,6 +31,8 @@ class UpdateInformation:
     #Internal process checks
     initialized = False
     init_error = None
+    #Protected files
+    Protected: list = ["config.json"]
 
 def init():
     try:
@@ -104,6 +106,16 @@ def md5_for_file(f: io.BufferedReader, block_size=2**20):
         md5.update(data)
     return md5.digest()
 
+def merge_perm(txt: str, default = "y"):
+    res = ""
+    while res not in ["y","n"]:
+        res = input(txt).lower().strip()
+        if res == "":
+            res = default
+    else:
+        return res == "y"
+
+
 def merge(path: Path, into: Path):
     """Copies path to into, recursing into children (if path is a directory) and ignoring already existing files."""
     if not path.exists():
@@ -118,6 +130,17 @@ def merge(path: Path, into: Path):
         if into.exists():
             if md5_for_file(open(into,'rb')) == md5_for_file(open(path,'rb')):
                 print("No changes on file: ", into)
+            elif into.name in UpdateInformation.Protected:
+                if into.name == "config.json":
+                    config_conflict = "config_new.json"
+                    if merge_perm("Do you want config.json to be overwridden? (y/N)",default="n"):
+                        print("Overridden,", into)
+                        shutil.copy2(path, into)
+                    else:
+                        print(f"The updated config.json will be named as {config_conflict}, please update any changes.")
+                        new_path = into.with_name(config_conflict)
+                        shutil.copy2(path, new_path)
+                
             else:
                 print("Changes found on file: ", into)
                 shutil.copy2(path, into)
