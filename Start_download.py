@@ -275,7 +275,7 @@ if __name__ == "__main__":
   group.add_argument('-v', '--version', action="store_true", help="Show version")
   args = parser.parse_args()
   if args.version:
-    print(f"nScraper - V{Updater.ConstructVerion(Updater.CurrentVersion())}")
+    print(f"nScraper - V{Updater.ConstructVersion(Updater.CurrentVersion())}")
     print("https://github.com/Kinuseka")
     sys.exit()
   elif args.update:
