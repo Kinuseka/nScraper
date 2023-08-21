@@ -263,7 +263,7 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
                         downloaded_size += len(chunk)
                         Data.progress_status[title_value]["Bytes"] = downloaded_size
                         await asf.write(chunk)
-                loggon.info(f"Downloaded {downloaded_size} of {total_size} bytes")
+                loggon.info(f"<{title_value}>Downloaded {downloaded_size} of {total_size} bytes")
                 _invoke_finish(True)
                 return True
           except httpx.HTTPError as e:
