@@ -14,7 +14,7 @@ def initialize(API_DATA_CONFIG):
 def Data_parse(data):
   """For MODDERS:
   1.If you want to add a Link verifier to prevent invalid link error then you have nothing to edit here, however you can modify it to return true all the time if you dont want this feature
-  2.You can modify the 1st condition on line 18 if the target site does not support or does not use numbers to identify their gallery. 
+  2.You can modify the 1st condition on if the target site does not support or does not use numbers to identify their gallery. 
   3.If you want to use links, be sure that the user has to include http:// or https:// to prevent further problems. 
   The Lib.Checklink is connected to Lib/NHentai.py (In Default)
   """
