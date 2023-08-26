@@ -19,7 +19,7 @@ LOCAL_DIR = os.getcwd()
 class UpdateInformation:
     Name_ver = "nhScraper"
     Version_Host = "https://raw.githubusercontent.com/Kinuseka/Kinuseka.github.io/main/external%20resource/upd_nh.json"
-    Current_Version: list = [0,6,3] 
+    Current_Version: tuple = __main__.__version_info__ 
     Version: list = None
     Message: str = None
     Additional: dict = {}

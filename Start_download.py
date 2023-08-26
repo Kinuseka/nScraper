@@ -1,3 +1,7 @@
+#Metadata
+__version_info__ = (0, 6, 4)
+__version__ = '.'.join(map(str, __version_info__))
+
 #Standard Library
 import sys
 import os
@@ -30,10 +34,10 @@ from essentials.Errors import exception as cferror
 #HIGHER VALUE: FASTER, LESS STABLE (BEST IN FAST NETWORK CONDITIONS
 
 Process.init_datas()
-methods = [
+methods = (
   "cfbypass",
   "mirror"
-]
+)
 
 class SortData:
     AcquiredTags = None
@@ -220,12 +224,14 @@ if __name__ == "__main__":
         inf_release = "Platform: " + str(platform.release())
         inf_version = "Version: " + str(platform.version())
         inf_machine = "Machine: " + str(platform.machine())
+        inf_pyver = "Python: " + str(platform.python_version()) 
         logtype.info(
         (
         inf_platform,
         inf_release,
         inf_version,
-        inf_machine
+        inf_machine,
+        inf_pyver
         )
         )
         return 0
