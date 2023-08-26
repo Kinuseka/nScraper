@@ -3,23 +3,11 @@ import re
 import json
 import yaml
 import urllib.request
-import Lib.NHentai as NHentai
+from . import NHentai
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
 site_domain = "to"
 headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"}
-#Optional
-def CheckLink(data, digit=False):
-  '''For MODDERS:
-  This part is where you modify your OWN link checker to your own target site to scrape.
-  Most of the time there wont be any major edits other than the website you want to check.
-  '''
-  if digit:
-    return(f"https://nhentai.{site_domain}/g/%s" % data)
-  if re.search(f"https?://nhentai.{site_domain}/g/(\d+|/)", data.lower()):
-    return(0, data)
-  else:
-    return(2, "Link is not nHentai")
 
 #Main API
 class Api:
@@ -109,4 +97,5 @@ class Api:
     self.preloaded_data = data
    
 Iterdata = NHentai.Iterdata
+CheckLink = NHentai.CheckLink
     
