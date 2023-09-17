@@ -26,8 +26,8 @@ import httpx
 
 #Custom library
 import Process
-from essentials import updater as Updater
-from essentials.Errors import exception as cferror
+import essentials.updater as Updater
+import essentials.Errors.exception as cferror
 
 #EDIT THE MAXIMUM AMOUNT OF DOWNLOAD PROCESS HAPPENING AT THE SAME TIME
 #LOWER VALUE: SLOWER, MORE STABLE (BEST IN SLOW NETWORK CONDITIONS)

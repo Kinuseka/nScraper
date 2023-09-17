@@ -6,6 +6,7 @@ import json
 import pickle
 import os
 from . import NHentai
+from ..essentials.Errors import exception as cferror
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
 site_domain = "net"
@@ -117,12 +118,3 @@ class Api:
    
 Iterdata = NHentai.Iterdata
 CheckLink = NHentai.CheckLink
-    
-    
-
-if __name__ == "__main__":
-  from ..essentials import HSite
-  from ..essentials.Errors import exception as cferror
-else:
-  from essentials import HSite
-  from essentials.Errors import exception as cferror
