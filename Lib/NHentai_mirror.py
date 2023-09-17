@@ -96,6 +96,16 @@ class Api:
       data = dict_data
     self.preloaded_data = data
    
+def CheckLink(data, digit=False):
+  '''For MODDERS:
+  This part is where you modify your OWN link checker to your own target site to scrape.
+  Most of the time there wont be any major edits other than the website you want to check.
+  '''
+  if digit:
+    return(f"https://nhentai.{site_domain}/g/%s" % data)
+  if re.search(f"https?://nhentai.{site_domain}/g/(\d+|/)", data.lower()):
+    return(0, data)
+  else:
+    return(2, "Link is not nHentai")
 Iterdata = NHentai.Iterdata
-CheckLink = NHentai.CheckLink
     
