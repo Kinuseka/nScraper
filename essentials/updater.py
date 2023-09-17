@@ -31,19 +31,25 @@ class UpdateInformation:
     #Internal process checks
     initialized = False
     init_error = None
+    init_status: str = None
     #Protected files
     Protected: list = ["config.json"]
 
 def init():
     try:
         req = requests.get(UpdateInformation.Version_Host)
+        if req.status_code != 200:
+            UpdateInformation.init_error = True
+            UpdateInformation.init_status = f"Failure to collect data: http error code: {req.status_code}"
+            return
         sort_data(req)
         if UpdateInformation.Additional.get('New_Host', None):
             UpdateInformation.Version_Host = UpdateInformation.Additional['New_Host']
             return init()
         UpdateInformation.initialized = True
     except Exception as e:
-        UpdateInformation.init_error = e
+        UpdateInformation.init_error = True
+        UpdateInformation.init_status = e
 
 def sort_data(req: requests.Response):
     data: dict = req.json()[UpdateInformation.Name_ver]
