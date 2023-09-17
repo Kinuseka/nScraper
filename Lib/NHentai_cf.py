@@ -6,7 +6,7 @@ import json
 import pickle
 import os
 from . import NHentai
-from ..essentials.Errors import exception as cferror
+from essentials.Errors import exception as cferror
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
 site_domain = "net"
@@ -99,22 +99,6 @@ class Api:
     except TypeError as e:
       data = dict_data
     self.preloaded_data = data
-
-  def __reload_cf_token(self,reset=False):
-    cookieStatus =  HSite.SiteCFBypass.cookie_available()
-    if not cookieStatus[0] or reset:
-      NHS = HSite.SiteCFBypass(self._data_level)
-      if reset:
-        HSite.SiteCFBypass.delete_cookies()
-      NHS.start()
-      NHS.join()
-
-  def __set_cookies(self, session):
-    cookies = pickle.load(open(self.cookie_path,"rb"))
-    selenium_headers = pickle.load(open(self.session_path,"rb"))
-    session.headers.update({"user-agent": selenium_headers})
-    for cookie in cookies:
-      session.cookies.set(cookie['name'], cookie['value'], domain=cookie['domain'])
    
 Iterdata = NHentai.Iterdata
 CheckLink = NHentai.CheckLink
