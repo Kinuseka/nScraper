@@ -85,7 +85,7 @@ class Iterdata:
     self.temptxt = []
   
   def extract_numbers(self, text):
-    pattern = r'(http[s]?://nhentai\.net/g/(\d{1,6})|(?<!#)(?<!\S)\b\d{1,6}(?:[ ,]\d{1,6})?\b(?!\S))'
+    pattern = r'(http[s]?://nhentai\.net/g/(\d{1,6})|(?<!#)(?<!\S)\b\d{1,6}(?:[,]\d{1,6})?\b(?!\S))'
     matches = re.findall(pattern, text)
 
     links_and_numbers = []
