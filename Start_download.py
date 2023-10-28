@@ -164,9 +164,7 @@ def statuschecker(verbose,run_event):
   with open(Data_pickledirectory, "wb") as f:
     data = Process.Data
     pickle.dump(data, f, protocol=4)
-  Process.VolatileData.reset()
-  Process.Data.reset()
-    
+  Process.reset_datas()
 async def amain():
   DLInst = Process
   #Regulates max concurrency to be opened

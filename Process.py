@@ -300,11 +300,12 @@ class Data_raw:
 
   def reset(self):
     self.progress_status = {}
+    return self
 class VData:
-  def __init__(self):
+  def __init__(self, data):
     self.response_proc = []
     self.retry_proc = [] 
-    self.data = Data
+    self.data = data
   
   def total(self):
     Max = 0
@@ -318,24 +319,25 @@ class VData:
       Bytes += Data.progress_status[n]["Bytes"]
     return Bytes
   
-  def reset(self):
+  def reset(self,data):
     self.response_proc = []
     self.retry_proc = [] 
-    self.data = Data
+    self.data = data
+    return self
   
 def reset_datas():
   global Data
   global VolatileData
   try:
     Data = Data.reset()
-    VolatileData = VolatileData.reset()
+    VolatileData = VolatileData.reset(Data)
   except AttributeError:
-    pass
+    print("You have not initialized datas")
 def init_datas():
   global Data
   global VolatileData
   Data = Data_raw()  
-  VolatileData = VData()
+  VolatileData = VData(Data)
 
 if __name__ == "__main__":
   pass
