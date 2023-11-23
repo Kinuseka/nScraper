@@ -1,5 +1,5 @@
 #Metadata
-__version_info__ = (0, 6, 6)
+__version_info__ = (0, 6, 7)
 __version__ = '.'.join(map(str, __version_info__))
 
 #Standard Library
@@ -223,15 +223,17 @@ if __name__ == "__main__":
         inf_version = "Version: " + str(platform.version())
         inf_machine = "Machine: " + str(platform.machine())
         inf_pyver = "Python: " + str(platform.python_version()) 
+        inf_prgmver = "nScraper: " + __version__
         logtype.info(
         (
         inf_platform,
         inf_release,
         inf_version,
         inf_machine,
-        inf_pyver
+        inf_pyver,
         )
         )
+        logtype.info(inf_prgmver)
         return 0
     except Exception as e:
         logging.exception(e)
