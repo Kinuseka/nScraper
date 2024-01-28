@@ -26,7 +26,7 @@ class Api:
 
     caught_exception = None
     try:
-      session = CFSession.cfSession()
+      session = CFSession.cfSession(headless_mode=True)
       content = session.get(data)
       content.raise_for_status()
     except (CFSession.cfexception.HTTPError, CFSession.cfexception.NotFound ) as e:
