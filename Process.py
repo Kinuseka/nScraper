@@ -1,4 +1,5 @@
 from functools import wraps
+from typing import Union
 import anyio
 import httpx
 import Lib
@@ -11,7 +12,7 @@ import re
 def initialize(API_DATA_CONFIG):
   Lib.init_import(API_DATA_CONFIG["module_name"])
 
-def Data_parse(data):
+def Data_parse(data: Union[str, int]):
   """For MODDERS:
   1.If you want to add a Link verifier to prevent invalid link error then you have nothing to edit here, however you can modify it to return true all the time if you dont want this feature
   2.You can modify the 1st condition on if the target site does not support or does not use numbers to identify their gallery. 
@@ -21,6 +22,13 @@ def Data_parse(data):
   if data.isdigit():
     data = Lib.CheckLink(data, digit=True)
     return(0,data)
+  elif data.startswith("#"):
+    try:
+      data = int(data.replace("#", ""))
+      data = Lib.CheckLink(data, digit=True)
+      return(0,data)
+    except ValueError:
+      return(1, "Failed to parse code, expecting digits after '#'")
   elif "http://" in data or "https://" in data:
     result,data = Lib.CheckLink(data)
     return(result,data)
