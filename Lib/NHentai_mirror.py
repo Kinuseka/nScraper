@@ -78,12 +78,13 @@ class Api:
       extension = "png"
     elif file == "g":
       extension = "gif"
+    elif file == "w":
+      extension = "webp"
     else:
       print("WARNING AT PAGE: %s\nUNIDENTIFIED FORMAT DETECTED REPORT THIS BUG\nautoset: jpg" % value)
       extension = "jpg"
     media_id = self.json["media_id"]
-    url = "https://i.nhentai.net/galleries/%s/%s.%s" % (media_id, value, extension)
-    #url = "https://t.dogehls.xyz/galleries/%s/%s.%s" % (media_id, value, extension)
+    url = "https://zorocdn.xyz/galleries/%s/%s.%s" % (media_id, value, extension)
     return url
 
   def __preloader_pages(self):

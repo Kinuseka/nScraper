@@ -68,11 +68,13 @@ class Api:
       extension = "png"
     elif file == "g":
       extension = "gif"
+    elif file == "w":
+      extension = "webp"
     else:
-      print("WARNING AT PAGE: %s\nUNIDENTIFIED FORMAT DETECTED REPORT THIS BUG\nautoset: jpg" % value)
+      print("WARNING AT PAGE: %s\nUNIDENTIFIED FORMAT '%s' DETECTED REPORT THIS BUG\nautoset: jpg" % (value, file))
       extension = "jpg"
     media_id = self.json["media_id"]
-    url = "https://i.nhentai.net/galleries/%s/%s.%s" % (media_id, value, extension)
+    url = "https://i3.nhentai.net/galleries/%s/%s.%s" % (media_id, value, extension)
     return url
    
 class Iterdata:
