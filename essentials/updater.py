@@ -69,11 +69,11 @@ def ConstructVersion(Version: list):
 
 def Comparator(version, remote):
     ftr,new = False, False
-    for cur_ver, rem_ver in zip(version, remote):
-        if cur_ver < rem_ver:
-            new = True
-        if cur_ver > rem_ver:
-            ftr = True
+    remote = tuple(remote)
+    if version < remote:
+        new = True
+    elif version > remote:
+        ftr = True
     return new, ftr
 
 def show_update(logger, loggon):
@@ -88,20 +88,21 @@ def show_update(logger, loggon):
         loggon.error(f'Could not fetch update details from: {UpdateInformation.Version_Host}')
         return
     new_update, future_update = Comparator(UpdateInformation.Current_Version, UpdateInformation.Version)
-    if new_update:
+    if new_update and not future_update:
         logger.info(f"New update found: v{ConstructVersion(Version())}")
-    elif future_update:
+    elif future_update or new_update:
         logger.warn("This version is from the future, might be unstable.")
         logger.info(f"Available: v{ConstructVersion(Version())} | Your version: v{ConstructVersion(CurrentVersion())}")
     message = UpdateInformation.Message
     if all((new_update, message)) or all((future_update, message)):
-        logger.info(f'[Announce]: {message}')
+        logger.info(f'{message}')
 
 def _new_update():
     init()
     n, f = Comparator(UpdateInformation.Current_Version, UpdateInformation.Version)
-    if n: return True
-    return False
+    if n: return 1
+    if f: return 2
+    return 0
 
 def md5_for_file(f: io.BufferedReader, block_size=2**20):
     md5 = hashlib.md5()
@@ -146,9 +147,11 @@ def merge(path: Path, into: Path):
                         print(f"The updated config.json will be named as {config_conflict}, please update any changes.")
                         new_path = into.with_name(config_conflict)
                         shutil.copy2(path, new_path)
+                else:
+                    print("Ignored filename: '%s' as it is part of the protected files/directories.", into.name)
                 
             else:
-                print("Changes found on file: ", into)
+                print("Changes added to file: ", into)
                 shutil.copy2(path, into)
             return
         shutil.copy2(path, into)

@@ -285,12 +285,15 @@ if __name__ == "__main__":
     print("https://github.com/Kinuseka")
     sys.exit()
   elif args.update:
-    if Updater._new_update():
+    new_update = Updater._new_update()
+    if new_update == 1:
       Updater.show_update(logger,loggon)
       print("Initiating update are you sure? (y/N)",end="")
       __choice_user = input().lower().strip()
       if __choice_user == "y":  
         Updater.upgrade(loggon)
+    elif new_update == 2:
+      Updater.show_update(logger, loggon)
     else:
       print('Version already up to date!')
     sys.exit()
