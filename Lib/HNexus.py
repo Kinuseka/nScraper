@@ -165,6 +165,7 @@ class Api:
         # pattern = re.compile(r'\.(png|jpg|jpeg)', re.IGNORECASE)
         # extension = pattern.find(data['image'])
         return data['image']
+
 class Iterdata:
     """[Optional Feature]
     File Iterator used to automatically detect links in a text file IF provided

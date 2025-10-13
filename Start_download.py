@@ -283,8 +283,8 @@ if __name__ == "__main__":
   '''
   parser = argparse.ArgumentParser(description=info)
   group = parser.add_mutually_exclusive_group(required=True)
-  group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [argument]")
-  group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location]")
+  group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [link or ID]")
+  group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location/filename]")
   group.add_argument('-up', '--update', action="store_true", help="Checks for update and applies it")
   group.add_argument('-v', '--version', action="store_true", help="Show version")
   args = parser.parse_args()
