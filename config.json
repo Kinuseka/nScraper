@@ -3,8 +3,8 @@
     "semaphore":10,
     "Api": {
       "module_name": "NHentai",
-      "cf_bypass": true,
-      "mirror_available": true 
+      "cf_bypass": false,
+      "mirror_available": false 
     }
   }
 }
