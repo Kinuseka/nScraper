@@ -30,7 +30,7 @@ class Api:
         '''
         argument 'data' should be a valid link the target booklet
         '''
-        self.name = "HNexus" #Directory label
+        self.name = "HentaiNexus" #Directory label
         #HNexus has an encrypted data found /read/ we can speed up load times by decoding that instead and get the links directly.
         self.hostname = "hentainexus.com"
         self.view_link = f"https://{self.hostname}/view/{data}"
