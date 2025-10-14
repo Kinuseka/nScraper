@@ -161,9 +161,6 @@ class Api:
         e.g. value = 20, Return https://example.site/page20.jpg
         """
         data = self.json[value-1]
-        # page = data['label']
-        # pattern = re.compile(r'\.(png|jpg|jpeg)', re.IGNORECASE)
-        # extension = pattern.find(data['image'])
         return data['image']
 
 class Iterdata:
@@ -171,21 +168,41 @@ class Iterdata:
     File Iterator used to automatically detect links in a text file IF provided
     """
     def __init__(self,file_directory):
-        self.available = False #Used to indicate that the feature is available. False if None
+        self.available = True #Used to indicate that the feature is available. False if None
         self.data = file_directory
-        
+        self._index = -1
+        self.temptxt = []
+    
+    def extract_numbers(self, text):
+        pattern = rf"(?<!#)(?<!\S)(?:https?:\/\/hentainexus\.{site_domain}\/(?:read|view)\/)?(\d{{1,6}})(?=(?:[,\s]|$))"
+        matches = re.findall(pattern, text)
+        links_and_numbers = []
+        for match in matches:
+            print(match)
+            if match:
+                links_and_numbers.append(match)
+        return links_and_numbers
+
     def __iter__(self):
         return self
         
     def __enter__(self):
+        self.txt_line = open(self.data,"r")
+        full_txt = self.txt_line.read()
+        extracted = self.extract_numbers(full_txt)
+        self.temptxt = extracted
         return self
     
     def __next__(self):
+        self._index += 1 
+        if self._index >= len(self.temptxt):
+            raise StopIteration
+        return self.temptxt[self._index]
         raise StopIteration
         
     def __reversed__(self):
-        return None
+        return self.temptxt[::-1]
     
-    def __exit__(self,**args):
-        #Close a open directort
-        pass
+    def __exit__(self,tp,v,tb):
+        #Close an open directory
+        self.txt_line.close()
