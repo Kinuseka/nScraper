@@ -277,9 +277,9 @@ async def Queue(link,title_value,location,client,loggon,sem,task_status):
           except httpx.HTTPError as e:
             retries += 1
             #Retry 0-[max retries] times
-            if retries < 7:
+            if retries <= MAX_RETRIES:
               loggon.exception(f"\nP:{title_value},Error: {e}, full data on logs")
-              loggon.info(f"<{title_value}>Problem occured, retrying {retries}/6")
+              loggon.info(f"<{title_value}>Problem occured, retrying {retries}/{MAX_RETRIES}")
               headers["Range"] = f"bytes={downloaded_size}-"
               VolatileData.retry_proc.append(True)
               await anyio.sleep(1)
