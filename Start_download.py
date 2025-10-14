@@ -1,5 +1,5 @@
 #Metadata
-__version_info__ = (0, 7, 0)
+__version_info__ = (1, 0, 0)
 __version__ = '.'.join(map(str, __version_info__))
 
 #Standard Library
@@ -86,8 +86,16 @@ def main(args):
   with open(os.path.join(os.getcwd(),"Downloads",Dir_name,TitleName,"metadata.json"),"w") as f:
     t_dict = {}
     t_list = []
-    for num,tags in enumerate(AcquiredTags):
-      t_list.append(tags)
+    if isinstance(AcquiredTags, dict): 
+      for key, value in AcquiredTags.items():
+        if key == "tags" or key == "Tags":
+          for tag in value:
+            t_list.append(tag)
+        else:
+          t_dict[key] = value
+    else:
+      for num,tags in enumerate(AcquiredTags):
+        t_list.append(tags)
     origfilename_temp = {"title_original" : RawTitleName}
     gallery_temp = {'gallery_id' : args}
     tags_temp = {"tags" : t_list}
@@ -275,8 +283,8 @@ if __name__ == "__main__":
   '''
   parser = argparse.ArgumentParser(description=info)
   group = parser.add_mutually_exclusive_group(required=True)
-  group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [argument]")
-  group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location]")
+  group.add_argument('-n', '--nukecode',metavar=" ", help="-n/--nukecode [link or ID]")
+  group.add_argument('-f', '--filecode',type=is_path, metavar=" ", help="-f/--filecode [file.txt location/filename]")
   group.add_argument('-up', '--update', action="store_true", help="Checks for update and applies it")
   group.add_argument('-v', '--version', action="store_true", help="Show version")
   args = parser.parse_args()

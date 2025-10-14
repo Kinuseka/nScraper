@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import re
 import json
 import urllib.request
+import random
 #I recommend reading into the source code of the nhentai website to get a better understanding of what my code really does
 
 site_domain = "net"
@@ -74,8 +75,47 @@ class Api:
       print("WARNING AT PAGE: %s\nUNIDENTIFIED FORMAT '%s' DETECTED REPORT THIS BUG\nautoset: jpg" % (value, file))
       extension = "jpg"
     media_id = self.json["media_id"]
-    url = "https://i3.nhentai.net/galleries/%s/%s.%s" % (media_id, value, extension)
+    cdns = self.fetch_cdn_urls()
+    if cdns:
+      rcdn_val = random.choice(cdns)
+      cdn = rcdn_val
+    else:
+      cdn = "i3.nhentai.net"
+    url = "https://%s/galleries/%s/%s.%s" % (cdn, media_id, value, extension)
     return url
+  
+  def fetch_cdn_urls(self):
+    """Return list of CDN hosts from window._n_app.image_cdn_urls if available."""
+    try:
+      scripts = self.soup.find_all("script")
+      for s in scripts:
+        # Safely get the script content as text
+        content = None
+        if s.string:
+          content = s.string
+        elif s.contents:
+          try:
+            content = "".join(str(x) for x in s.contents)
+          except Exception:
+            content = None
+        if not content or "image_cdn_urls" not in content:
+          continue
+        match = re.search(r'image_cdn_urls\s*:\s*(\[[^\]]*\])', content)
+        if match:
+          array_text = match.group(1)
+          try:
+            return json.loads(array_text)
+          except Exception:
+            # Attempt a simple cleanup for minor syntax differences
+            cleaned = re.sub(r",\s*]", "]", array_text)
+            cleaned = cleaned.replace("'", '"')
+            try:
+              return json.loads(cleaned)
+            except Exception:
+              return []
+      return []
+    except Exception:
+      return []
    
 class Iterdata:
   """File Iterator used to automatically detect links inside a text file

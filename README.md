@@ -3,6 +3,7 @@ A python script downloader
 
 ## Current Supported sites
 * **NHentai.net [Mirror site: Nhentai.to]**
+* **HentaiNexus.com**
 
 ## About
 
@@ -40,20 +41,22 @@ A python script downloader
 
 `python Start_download.py -n 401084` or `https://nhentai.net/g/401084`
 
+`python Start_download.py -n 12791`or `https://hentainexus.com/view/12791`
 
 
 
 ## Note:
+> To set to the correct server be sure to check the `/Lib/` and replace `module_name` on `config.json` according to the server you want. 
+> > e.g. `module_name: "HNexus"` for `HNexus.py`
+
 > Bypassing cloudflare requires a modified selenium which does not support headless mode. If you are not on a 
 desktop environment, install a virtual desktop using xvfb. Then run it as xvfb-run python Startdownload.py -n <Num>
 
 > If your environment does not have a desktop nor supports xvfb, then you are better off using a mirror sites which is not protected by cloudflare
 
-> Mirror server is enabled by default incase the official site is not available, if you prefer
-to disable this. Please set "mirror_available" to `false` in config.json
+> Mirror server is disabled by default, if the server supports one and you prefer to enable this. Please set "mirror_available" to `true` in config.json
 
-> The Mirror server is slightly outdated compared to the official site. Some titles might not be available especially to newer release like 40000+.
-though they are being continually updated as time goes.
+> The Mirror server is slightly outdated compared to the official site. Some titles might not be available especially to newer releases.
 
 
 ## XVFB INSTALLATION
