@@ -3,6 +3,7 @@ A python script downloader
 
 ## Current Supported sites
 * **NHentai.net [Mirror site: Nhentai.to]**
+* **HentaiNexus.com**
 
 ## About
 
@@ -40,6 +41,7 @@ A python script downloader
 
 `python Start_download.py -n 401084` or `https://nhentai.net/g/401084`
 
+`python Start_download.py -n 12791`or `https://hentainexus.com/view/12791`
 
 
 
