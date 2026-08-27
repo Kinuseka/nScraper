@@ -39,6 +39,57 @@ methods = (
   "mirror"
 )
 
+def _pkg_version(name):
+  """Installed package version without importing it (avoids trio's traceback monkeypatch)."""
+  try:
+    from importlib.metadata import version, PackageNotFoundError
+    try:
+      return version(name)
+    except PackageNotFoundError:
+      return None
+  except ImportError:
+    try:
+      from pkg_resources import get_distribution, DistributionNotFound
+      try:
+        return get_distribution(name).version
+      except DistributionNotFound:
+        return None
+    except ImportError:
+      return None
+
+def _parse_version(ver):
+  parts = []
+  for token in str(ver).split("."):
+    digits = ""
+    for char in token:
+      if char.isdigit():
+        digits += char
+      else:
+        break
+    parts.append(int(digits) if digits else 0)
+    if len(parts) == 3:
+      break
+  while len(parts) < 3:
+    parts.append(0)
+  return tuple(parts[:3])
+
+def select_anyio_backend():
+  """trio when the installed trio build supports this Python; otherwise asyncio.
+
+  trio < 0.22 monkeypatches TracebackException in a way that breaks on Python 3.11+
+  (max_group_width). trio < 0.27 still does so on Python 3.13+ (colorize).
+  """
+  trio_ver = _pkg_version("trio")
+  if not trio_ver:
+    return "asyncio"
+  trio_tuple = _parse_version(trio_ver)
+  py = sys.version_info[:2]
+  if trio_tuple < (0, 22, 0) and py >= (3, 11):
+    return "asyncio"
+  if trio_tuple < (0, 27, 0) and py >= (3, 13):
+    return "asyncio"
+  return "trio"
+
 class SortData:
     AcquiredTags = None
     AcquiredPage = None
@@ -119,7 +170,9 @@ def main(args):
   run_event.set()
   Thread1 = threading.Thread(target=statuschecker,args=(verbose,run_event,))
   Thread1.start()
-  anyio.run(amain, backend='trio')
+  backend = select_anyio_backend()
+  loggon.info("Anyio backend: %s" % backend)
+  anyio.run(amain, backend=backend)
   #--+
 def statuschecker(verbose,run_event): 
   "User Interface status viewer"

@@ -35,13 +35,15 @@ class Api:
     page = urllib.request.urlopen(req)
     self.soup = BeautifulSoup(page, "html.parser")
     json_regex = r'JSON\.parse\("(.*?)"\)'
-    script = re.search(json_regex, (self.soup.find_all("script")[2].contents[0]).strip()).group(1).encode("utf-8").decode("unicode-escape")
+    # script = re.search(json_regex, (self.soup.find_all("script")[2].contents[0]).strip()).group(1).encode("utf-8").decode("unicode-escape")
+    script = self.soup.find('script', {'data-url': re.compile(r'^/api/v2/galleries/')}) # We gather it directly from site to avoid rate limiting (I think)
     #IF THERE IS NO ERROR THEN PROCEED
-    self.json = json.loads(script)
+    self.json = json.loads(json.loads(script.string).get('body', {}))
+    # self.json = self.json[]
 
   def Pages(self):
     "Total available pages count"
-    Page = len(self.json["images"]["pages"])
+    Page = len(self.json["pages"])
     return Page
 
   def Tags(self):
@@ -61,15 +63,15 @@ class Api:
     This function is only used to RETURN a valid direct link to the targeted image.
     The variable 'value' is the episode/page of the certain image to return. 
     """
-    data = self.json["images"]["pages"][value-1]
-    file = data["t"]
-    if file == "j":
+    data = self.json["pages"][value-1]
+    file = data["path"].rsplit(".", 1)[-1]
+    if file == "jpg":
       extension = "jpg"
-    elif file == "p":
+    elif file == "png":
       extension = "png"
-    elif file == "g":
+    elif file == "gif":
       extension = "gif"
-    elif file == "w":
+    elif file == "webp":
       extension = "webp"
     else:
       print("WARNING AT PAGE: %s\nUNIDENTIFIED FORMAT '%s' DETECTED REPORT THIS BUG\nautoset: jpg" % (value, file))
