@@ -161,7 +161,9 @@ class Api:
         e.g. value = 20, Return https://example.site/page20.jpg
         """
         data = self.json[value-1]
-        return data['image']
+        image = data.get('image') or data.get('image_avif') or data.get('image_fallback')
+        
+        return image
 
 class Iterdata:
     """[Optional Feature]
