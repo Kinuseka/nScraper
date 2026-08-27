@@ -7,6 +7,27 @@ import random
 
 site_domain = "net"
 headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"}
+
+def _build_url_opener():
+  """Use stdlib 308 support when present (3.11+); otherwise backport it.
+
+  Python 3.11 added HTTP 308 to urllib. Older versions raise HTTPError 308
+  instead of following Location. 307 (3.3+) preserves the method like 308;
+  302 is the fallback on very old urllib.
+  """
+  redirect = urllib.request.HTTPRedirectHandler
+  if hasattr(redirect, "http_error_308"):
+    return urllib.request.build_opener()
+  remap_to = 307 if hasattr(redirect, "http_error_307") else 302
+  class _HTTP308RedirectHandler(redirect):
+    http_error_308 = redirect.http_error_302
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+      if code == 308:
+        code = remap_to
+      return redirect.redirect_request(self, req, fp, code, msg, headers, newurl)
+  return urllib.request.build_opener(_HTTP308RedirectHandler)
+
+_url_opener = _build_url_opener()
 #Optional
 def CheckLink(data, digit=False):
   '''For MODDERS:
@@ -14,8 +35,10 @@ def CheckLink(data, digit=False):
   Most of the time there wont be any major edits other than the website you want to check.
   '''
   if digit:
-    return(f"https://nhentai.{site_domain}/g/%s" % data)
-  if re.search(f"https?://nhentai.{site_domain}/g/(\d+|/)", data.lower()):
+    return(f"https://nhentai.{site_domain}/g/%s/" % data)
+  if re.search(fr"https?://nhentai.{site_domain}/g/(\d+|/)", data.lower()):
+    if not data.endswith("/"):
+      data = data + "/"
     return(0, data)
   else:
     return(2, "Link is not nHentai")
@@ -32,7 +55,7 @@ class Api:
     #NHENTAI SITE FORTUNATELY HAS A DEDICATED JSON EMBEDDED INTO A SCRIPT FILE THAT YOU CAN USE TO GAIN INFORMATION FROM THE SITE. 
     #DIFFERENT SITES MIGHT NOT HAVE A JSON FILE SO YOU WILL HAVE TO DO THE PROCESS MANUALLY
     req = urllib.request.Request(data, headers=headers)
-    page = urllib.request.urlopen(req)
+    page = _url_opener.open(req)
     self.soup = BeautifulSoup(page, "html.parser")
     json_regex = r'JSON\.parse\("(.*?)"\)'
     # script = re.search(json_regex, (self.soup.find_all("script")[2].contents[0]).strip()).group(1).encode("utf-8").decode("unicode-escape")
